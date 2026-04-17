@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🐾 반려동물 입양 매칭</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ 사이드바 ═══════════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <span class="logo-icon">🐾</span>
+      <span class="logo-text">반려동물 입양</span>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-btn active" data-page="main">🏠 메인 페이지</button>
+      <button class="nav-btn"        data-page="list">🐕 반려견 리스트</button>
+      <button class="nav-btn"        data-page="matching">🔍 퍼펙트 매칭</button>
+      <button class="nav-btn"        data-page="guide">📖 입양 안내 &amp; 기르는 법</button>
+      <button class="nav-btn"        data-page="story">💌 스토리</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      🐾 보호소 반려동물과<br>따뜻한 가족을 이어드립니다
+    </div>
+  </aside>
+
+  <!-- ═══ 메인 컨텐츠 ════════════════════════════════════════════════════════ -->
+  <main class="content">
+
+    <!-- ─── PAGE 1: 메인 ─────────────────────────────────────────────────── -->
+    <section id="page-main" class="page active">
+      <div class="paw-bg">🐾</div>
+
+      <!-- 히어로 -->
+      <div class="hero">
+        <div class="hero-bg-emoji">🐕</div>
+        <div class="hero-badge">🐾 새로운 가족을 만나보세요</div>
+        <h1>당신에게 딱 맞는<br>가족을 찾아드립니다</h1>
+        <p>매일 기다리는 소중한 생명들, 지금 만나보세요</p>
+      </div>
+
+      <!-- 추천견 -->
+      <div class="section-header">
+        <div>
+          <div class="sec-title">🐶 이달의 추천견 🩷</div>
+          <div class="sec-sub">보호소에서 가장 오래 기다린 친구들을 소개합니다</div>
+        </div>
+        <button class="btn-outline" onclick="navigate('list')">전체 보기 →</button>
+      </div>
+      <div class="dog-cards" id="featured-dogs"></div>
+
+      <!-- 3단계 프로세스 -->
+      <div class="card step-card">
+        <div class="sec-title" style="margin-bottom:20px;">🐾 3단계 매칭 프로세스 🌿</div>
+        <div class="steps-row">
+          <div class="step">
+            <div class="step-circle" style="background:#E8A598;">1</div>
+            <div class="step-label">조건 검사</div>
+            <div class="step-desc">나의 라이프스타일과<br>환경 정보를 입력해요</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step">
+            <div class="step-circle" style="background:#7BAE8A;">2</div>
+            <div class="step-label">AI 매칭</div>
+            <div class="step-desc">나의 조건에 맞는<br>강아지를 찾아드려요</div>
+          </div>
+          <div class="step-arrow">→</div>
+          <div class="step">
+            <div class="step-circle" style="background:#F2C4CE; color:#7D4F5A;">3</div>
+            <div class="step-label">입양 확정</div>
+            <div class="step-desc">새 가족과의 행복한<br>시작을 응원해요 🩷</div>
+          </div>
+        </div>
+        <button class="btn-primary" onclick="navigate('matching')">🔍 지금 매칭 시작하기 →</button>
+      </div>
+    </section>
+
+    <!-- ─── PAGE 2: 반려견 리스트 ─────────────────────────────────────────── -->
+    <section id="page-list" class="page">
+      <div class="paw-bg">🐾</div>
+      <div class="page-title">현재 반려견 리스트 🩷</div>
+      <div class="page-sub">보호소에서 기다리는 친구들을 만나보세요</div>
+
+      <!-- 필터 -->
+      <div class="filters">
+        <input id="search-input"  class="filter-input"  type="text" placeholder="🔍  이름 또는 품종 검색...">
+        <select id="filter-status" class="filter-select">
+          <option>전체</option>
+          <option>입양가능</option>
+          <option>임시보호중</option>
+          <option>입양완료</option>
+        </select>
+        <select id="filter-size" class="filter-select">
+          <option>전체</option>
+          <option>소형</option>
+          <option>중형</option>
+          <option>대형</option>
+        </select>
+        <select id="filter-act" class="filter-select">
+          <option>전체</option>
+          <option>낮음</option>
+          <option>보통</option>
+          <option>높음</option>
+        </select>
+      </div>
+
+      <div class="result-count" id="result-count"></div>
+
+      <!-- 테이블 -->
+      <div class="table-wrap">
+        <div class="table-head">
+          <span>번호</span>
+          <span>이름</span>
+          <span>품종</span>
+          <span>나이</span>
+          <span>성별</span>
+          <span>지역</span>
+          <span>상태</span>
+          <span>크기</span>
+        </div>
+        <div id="dog-tbody"></div>
+      </div>
+
+      <div class="pagination" id="pagination"></div>
+    </section>
+
+    <!-- ─── PAGE 3: 퍼펙트 매칭 ──────────────────────────────────────────── -->
+    <section id="page-matching" class="page">
+      <div class="paw-bg">🐾</div>
+      <div class="page-title">🔍 퍼펙트 매칭 🩷</div>
+      <div class="page-sub">당신의 라이프스타일에 맞는 강아지를 찾아드립니다</div>
+
+      <div class="matching-cols">
+
+        <!-- 왼쪽: 설문 폼 -->
+        <div class="card form-card">
+          <div class="form-card-title">📋 나의 환경 입력 🌿</div>
+
+          <!-- 주거 형태 -->
+          <div class="form-group">
+            <label class="form-label">🏠 주거 형태</label>
+            <div class="pill-group">
+              <label class="pill">
+                <input type="radio" name="housing" value="apt" checked>
+                <span>🏢 아파트</span>
+              </label>
+              <label class="pill">
+                <input type="radio" name="housing" value="house">
+                <span>🏠 주택</span>
+              </label>
+              <label class="pill">
+                <input type="radio" name="housing" value="officetel">
+                <span>🏙️ 오피스텔</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 산책 시간 -->
+          <div class="form-group">
+            <label class="form-label">🚶 하루 산책 가능 시간</label>
+            <div class="slider-val" id="walk-val">1시간</div>
+            <input type="range" id="walk-slider" min="0" max="6" value="1"
+                   oninput="updateWalkLabel(this.value)">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:#A08070;margin-top:4px;">
+              <span>0시간</span><span>6시간</span>
+            </div>
+          </div>
+
+          <!-- 활동성 -->
+          <div class="form-group">
+            <label class="form-label">⚡ 활동성 선호도</label>
+            <div class="pill-group">
+              <label class="pill">
+                <input type="radio" name="activity" value="calm" checked>
+                <span>😴 조용한 편</span>
+              </label>
+              <label class="pill">
+                <input type="radio" name="activity" value="active">
+                <span>⚡ 활동적</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 알레르기 -->
+          <div class="form-group">
+            <label class="form-label">🌸 털 알레르기 여부</label>
+            <div class="pill-group">
+              <label class="pill">
+                <input type="radio" name="allergy" value="ok" checked>
+                <span>🙆 괜찮아요</span>
+              </label>
+              <label class="pill">
+                <input type="radio" name="allergy" value="sensitive">
+                <span>🚫 민감해요</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 반려 경험 -->
+          <div class="form-group">
+            <label class="form-label">🐾 반려 경험</label>
+            <select id="experience" class="form-select">
+              <option value="first">처음 키워요</option>
+              <option value="1-3">1~3년</option>
+              <option value="3years">3년 이상</option>
+            </select>
+          </div>
+
+          <button class="btn-primary full" onclick="doMatch()">🔍 매칭 시작하기</button>
+        </div>
+
+        <!-- 오른쪽: 결과 -->
+        <div class="card" style="min-height:360px;">
+
+          <!-- 빈 상태 -->
+          <div class="result-empty" id="result-empty">
+            <div class="result-empty-icon">🐾</div>
+            <div class="result-empty-text">조건을 입력하고<br>매칭을 시작해보세요!</div>
+            <div class="result-empty-sub">당신에게 딱 맞는 반려견을 찾아드릴게요 🩷</div>
+          </div>
+
+          <!-- 결과 패널 -->
+          <div id="result-panel" style="display:none;">
+
+            <!-- 점수 히어로 -->
+            <div class="card-pink result-hero">
+              <div class="result-emoji" id="res-emoji">🦮</div>
+              <div class="result-score" id="res-score">0% 일치!</div>
+              <div class="result-desc"  id="res-breed"></div>
+            </div>
+
+            <!-- 매칭 점수 바 -->
+            <div style="margin:16px 0 12px;">
+              <div style="font-weight:700;font-size:14px;color:#3D2B1F;margin-bottom:12px;">🎯 매칭 결과 🩷</div>
+
+              <div class="bar-group">
+                <div class="bar-label-row">
+                  <span>활동성 적합도</span>
+                  <span id="bar-activity-val">—</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" id="bar-activity-fill"></div>
+                </div>
+              </div>
+
+              <div class="bar-group">
+                <div class="bar-label-row">
+                  <span>주거 적합도</span>
+                  <span id="bar-housing-val">—</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" id="bar-housing-fill"></div>
+                </div>
+              </div>
+
+              <div class="bar-group">
+                <div class="bar-label-row">
+                  <span>경험 적합도</span>
+                  <span id="bar-exp-val">—</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" id="bar-exp-fill"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI 추천 이유 -->
+            <div class="ai-box" id="res-reason"></div>
+
+            <div style="margin-top:14px;">
+              <button class="btn-primary full" onclick="navigate('list')">🐾 입양 신청하러 가기</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PAGE 4: 입양 안내 ─────────────────────────────────────────────── -->
+    <section id="page-guide" class="page">
+      <div class="paw-bg">🐾</div>
+      <div class="page-title">📖 입양 안내 &amp; 기르는 법 🌿</div>
+      <div class="page-sub">준비된 반려인이 되는 첫걸음</div>
+
+      <div class="guide-cols">
+        <!-- 왼쪽 -->
+        <div>
+          <!-- 품종별 가이드 -->
+          <div class="card" style="margin-bottom:18px;">
+            <div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:12px;">🐕 품종별 가이드 🌿</div>
+
+            <select id="breed-select" class="form-select" onchange="updateBreedGuide(this.value)">
+              <option>골든 리트리버</option>
+              <option>말티즈</option>
+              <option>포메라니안</option>
+              <option>비숑 프리제</option>
+              <option>진돗개</option>
+            </select>
+
+            <div class="breed-card">
+              <div class="breed-emoji" id="breed-emoji">🦮</div>
+              <div>
+                <div class="breed-name" id="breed-name-display">골든 리트리버</div>
+                <div class="breed-tag">추천 매칭 품종 🌿</div>
+              </div>
+            </div>
+
+            <div class="card-light">🧬 <strong>활동성</strong> — <span id="breed-activity"></span></div>
+            <div class="card-light">😊 <strong>케어 방법</strong> — <span id="breed-care"></span></div>
+            <div class="card-light">⚠️ <strong>주의사항</strong> — <span id="breed-note"></span></div>
+          </div>
+
+          <!-- 타임라인 -->
+          <div class="card">
+            <div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:18px;">🗺️ 입양 절차 타임라인 🌿</div>
+            <div class="timeline">
+              <div class="tl-step">
+                <div class="tl-dot" style="background:#E8A598;">💬</div>
+                <div class="tl-label" style="color:#E8A598;">상담</div>
+                <div class="tl-desc">온라인/전화<br>사전 상담</div>
+              </div>
+              <div class="tl-arrow">→</div>
+              <div class="tl-step">
+                <div class="tl-dot" style="background:#7BAE8A;">🏠</div>
+                <div class="tl-label" style="color:#7BAE8A;">방문</div>
+                <div class="tl-desc">보호소 직접<br>방문 &amp; 만남</div>
+              </div>
+              <div class="tl-arrow">→</div>
+              <div class="tl-step">
+                <div class="tl-dot" style="background:#F2C4CE;">🤝</div>
+                <div class="tl-label" style="color:#C4748E;">임시 보호</div>
+                <div class="tl-desc">2주간<br>적응 기간</div>
+              </div>
+              <div class="tl-arrow">→</div>
+              <div class="tl-step">
+                <div class="tl-dot" style="background:#3D2B1F;">🎉</div>
+                <div class="tl-label" style="color:#3D2B1F;">정식 입양</div>
+                <div class="tl-desc">서류 완료<br>&amp; 입양 확정</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 오른쪽: 체크리스트 -->
+        <div class="card">
+          <div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:14px;">✅ 입양 전 체크리스트</div>
+          <div class="check-item check-ok">
+            <span class="check-icon">✅</span>
+            <span>최소 10~15년을 함께할 준비가 됐나요?</span>
+          </div>
+          <div class="check-item check-ok">
+            <span class="check-icon">✅</span>
+            <span>집 안에 반려동물이 있어도 되나요?</span>
+          </div>
+          <div class="check-item check-no">
+            <span class="check-icon">⬜</span>
+            <span>병원 / 건강 관리 비용을 감당할 수 있나요?</span>
+          </div>
+          <div class="check-item check-ok">
+            <span class="check-icon">✅</span>
+            <span>가족 모두가 반려동물을 원하나요?</span>
+          </div>
+          <div class="check-item check-no">
+            <span class="check-icon">⬜</span>
+            <span>여행/출장 시 돌봐줄 사람이 있나요?</span>
+          </div>
+          <div class="check-item check-ok">
+            <span class="check-icon">✅</span>
+            <span>반려동물 등록을 할 예정인가요?</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ -->
+      <div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:12px;">❓ 자주 묻는 질문 (FAQ) 🩷</div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFAQ(this)">
+          Q. 아파트에서도 강아지를 키울 수 있나요?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-a">
+          네! 소형견은 아파트 환경에서도 잘 적응합니다. 하루 30분 이상 산책과 규칙적인 운동을 제공해주세요.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFAQ(this)">
+          Q. 처음 강아지를 키우는데 어떤 품종이 좋을까요?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-a">
+          비숑 프리제, 말티즈, 골든 리트리버가 초보자에게 인기 있는 품종입니다. 퍼펙트 매칭으로 맞춤 추천을 받아보세요!
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFAQ(this)">
+          Q. 입양 후 파양이 가능한가요?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-a">
+          파양은 강아지에게 큰 상처를 줍니다. 입양 전 충분히 고민해 주시고, 어려움이 생기면 상담을 먼저 요청해주세요.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <button class="faq-q" onclick="toggleFAQ(this)">
+          Q. 입양 비용은 얼마인가요?
+          <span class="faq-arrow">▼</span>
+        </button>
+        <div class="faq-a">
+          보호소마다 다르지만 일반적으로 기본 건강검진, 예방접종, 중성화 비용 포함 10~20만원 수준입니다.
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PAGE 5: 스토리 ────────────────────────────────────────────────── -->
+    <section id="page-story" class="page">
+      <div class="paw-bg">🐾</div>
+      <div class="page-title">📖 스토리 — 행복한 재회 🩷</div>
+      <div class="page-sub">입양 후기와 전문가 칼럼을 함께해요</div>
+
+      <!-- 통계 -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">🐾 총 매칭 성공</div>
+          <div class="metric-value">2,847</div>
+          <div class="metric-delta">↑ 이번달 +143</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">😊 입양 만족도</div>
+          <div class="metric-value">98.2%</div>
+          <div class="metric-delta">후기 4.9 / 5.0 ⭐</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">⏱️ 평균 매칭 소요</div>
+          <div class="metric-value">3.2일</div>
+          <div class="metric-delta">기존 대비 -68%</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">🐕 현재 대기중</div>
+          <div class="metric-value">1,204</div>
+          <div class="metric-delta">지금 입양 가능!</div>
+        </div>
+      </div>
+
+      <div class="story-cols">
+        <!-- 후기 피드 -->
+        <div>
+          <div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:14px;">💌 입양 후기 피드 🩷</div>
+
+          <div class="review-card">
+            <div class="review-avatar" style="background:#F2C4CE;">🐕</div>
+            <div class="review-body">
+              <div class="review-top">
+                <span class="review-name">조보라 님</span>
+                <span class="review-date">2024.03.15</span>
+              </div>
+              <div class="review-text">
+                처음엔 걱정이 많았지만 초코 덕분에 매일이 행복해요. 강력 추천합니다! ⭐⭐⭐⭐⭐
+              </div>
+              <div class="review-tags">
+                <span class="review-tag">#입양완료</span>
+                <span class="review-tag">#3년차</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-card">
+            <div class="review-avatar" style="background:#C8E6C9;">🐩</div>
+            <div class="review-body">
+              <div class="review-top">
+                <span class="review-name">김뽀미 님</span>
+                <span class="review-date">2024.03.07</span>
+              </div>
+              <div class="review-text">
+                1인 가구라 외로웠는데 뽀미와 함께하며 집이 진짜 집 같아졌어요! ⭐⭐⭐⭐⭐
+              </div>
+              <div class="review-tags">
+                <span class="review-tag">#1인가구</span>
+                <span class="review-tag">#소형견</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-card">
+            <div class="review-avatar" style="background:#FDE8E4;">🐾</div>
+            <div class="review-body">
+              <div class="review-top">
+                <span class="review-name">이해피 님</span>
+                <span class="review-date">2024.02.28</span>
+              </div>
+              <div class="review-text">
+                아이들이 정말 좋아해요. 가족 모두에게 활력이 생겼습니다 🩷 감사해요!
+              </div>
+              <div class="review-tags">
+                <span class="review-tag">#가족입양</span>
+                <span class="review-tag">#대형견</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 전문가 칼럼 -->
+        <div>
+          <div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:14px;">📚 전문가 칼럼 🌿</div>
+
+          <div class="col-card">
+            <span class="col-tag" style="background:#FDE8E4;color:#C4748E;">건강 상식</span>
+            <div class="col-title">강아지 치아 관리, 어떻게 해야 할까요?</div>
+            <div class="col-desc">매일 양치질이 어렵다면 덴탈껌과 물 첨가제를 활용해보세요.</div>
+            <div class="col-foot">
+              <span class="col-author">👨‍⚕️ 김수의 수의사</span>
+              <span class="col-read">읽기 →</span>
+            </div>
+          </div>
+
+          <div class="col-card">
+            <span class="col-tag" style="background:#E8F5E9;color:#2E7D32;">훈련 팁</span>
+            <div class="col-title">새 집 적응 시 절대 하지 말아야 할 5가지</div>
+            <div class="col-desc">처음 2주가 평생을 결정합니다. 강요보단 기다림이 필요해요.</div>
+            <div class="col-foot">
+              <span class="col-author">🐾 박훈련 트레이너</span>
+              <span class="col-read">읽기 →</span>
+            </div>
+          </div>
+
+          <!-- 후기 작성 -->
+          <div class="col-card write-card">
+            <div class="write-card-title">🐾 나도 후기 남기기</div>
+            <div class="write-card-desc">입양 가족이라면 소중한 이야기를 공유해주세요!</div>
+            <button class="btn-primary full"
+                    onclick="alert('준비 중인 기능입니다. 곧 만나요! 🩷')">
+              ✏️ 후기 작성하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
