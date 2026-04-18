@@ -9,6 +9,9 @@ body {
   color: #3D2B1F;
   min-height: 100vh;
 }
+[data-testid="stAppViewContainer"] {
+    background-color: #FDF6F0 !important;
+}
 h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 
 /* ── App Layout ───────────────────────────────────────────────────────────── */
@@ -95,19 +98,31 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 }
 
 /* ── Page Sections ────────────────────────────────────────────────────────── */
-.page { display: none; padding: 28px; max-width: 1100px; }
-.page.active { display: block; }
+/*.page { display: none; padding: 28px; max-width: 1100px; }
+.page.active { display: block; }*/
+/* 가장 정확한 타겟팅 방식 */
+[data-testid="stMainBlockContainer"] {
+    width: 100% !important;
+    max-width: none !important;      /* initial보다 none이 더 확실하게 너비를 홥보합니다 */
+    min-width: auto !important;
+    padding: 5rem 3rem 2rem !important; 
+}
+
+/* (선택 사항) 만약 화면 상단의 미세한 여백까지 없애고 싶다면
+[data-testid="stAppViewBlockContainer"] {
+    padding-top: 0rem !important;
+}*/
 
 /* ── Paw Watermark ────────────────────────────────────────────────────────── */
 .paw-bg {
   position: fixed;
-  right: -40px;
-  bottom: -40px;
-  font-size: 380px;
+  right: -39px;
+  bottom: 22px;
+  font-size: 130px;
   opacity: 0.07;
   color: #E8A598;
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
   transform: rotate(15deg);
   line-height: 1;
 }
