@@ -36,12 +36,13 @@ paw-ong/
 ├── js/                      
 │   └── app.js               # 자바스크립트 로직
 ├── sections/                # Streamlit 멀티 페이지 구성
-│   ├── 1_doglist.py         # [Page 2] 반려견 리스트 및 필터링
-│   ├── 2_matching.py        # [Page 3] 사용자 성향 기반 매칭 검사
-│   ├── 3_guide.py           # [Page 4] 입양 안내 및 양육 가이드
-│   └── 4_story.py           # [Page 5] 입양 후기 및 커뮤니티
+│   ├── main_page.py         # [Page 1] 메인 페이지
+│   ├── dog_list.py          # [Page 2] 반려견 리스트 및 필터링
+│   ├── matching.py          # [Page 3] 사용자 성향 기반 매칭 검사
+│   ├── guide.py             # [Page 4] 입양 안내 및 양육 가이드
+│   └── story.py             # [Page 5] 입양 후기 및 커뮤니티
 ├── .gitignore               # Git 추적 제외 설정 파일
 ├── README.md                # 프로젝트 설명 문서
-├── app.py                   # [Page 1] 메인 페이지 (서비스 시작점)
+├── app.py                   # 서비스 시작점
 ├── index.html               # 기본 HTML 구조
 └── requirements.txt         # 설치 라이브러리 목록 (streamlit, pandas 등)
