@@ -9,9 +9,6 @@ body {
   color: #3D2B1F;
   min-height: 100vh;
 }
-[data-testid="stAppViewContainer"] {
-    background-color: #FDF6F0 !important;
-}
 h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 
 /* ── App Layout ───────────────────────────────────────────────────────────── */
@@ -21,11 +18,11 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
-[data-testid="stSidebar"] {
-  width: 240px !important;
+.sidebar {
+  width: 240px;
   min-width: 240px;
-  background: #F5EDE8 !important;
-  display: flex !important;
+  background: #F5EDE8;
+  display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
@@ -40,7 +37,6 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   gap: 10px;
   padding: 16px;
   flex-shrink: 0;
-  margin: -1rem -1rem 1rem -1rem; /* 사이드바 기본 여백 제거 및 위치 조정 */
 }
 .logo-icon { font-size: 22px; }
 .logo-text {
@@ -50,22 +46,18 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   color: #3D2B1F;
 }
 
-[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  padding: 0px !important;
-  flex: 1 !important;
-  height: 100% !important;
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 8px;
+  flex: 1;
 }
-[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {
+.nav-btn {
   background: transparent;
   border: none;
   border-radius: 10px;
   padding: 10px 14px;
-  display: flex !important;
-  justify-content: flex-start !important; 
-  align-items: center !important;
   text-align: left;
   font-size: 14px;
   font-family: 'Noto Sans KR', sans-serif;
@@ -74,13 +66,12 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   transition: background 0.18s, color 0.18s;
   width: 100%;
 }
-[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover { background: #EAD5CC; color: #3D2B1F; }
-/* TODO 활성화된 버튼 스타일 (session_state와 연동 후 수정) */
-/* .nav-btn.active {
+.nav-btn:hover { background: #EAD5CC; color: #3D2B1F; }
+.nav-btn.active {
   background: #E8A598;
   color: white;
   font-weight: 700;
-} */
+}
 
 .sidebar-footer {
   padding: 16px;
@@ -91,38 +82,26 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 }
 
 /* ── Main Content ─────────────────────────────────────────────────────────── */
-[data-testid="stMain"] {
-  flex: 1 !important;
-  overflow-y: auto !important;
-  height: 100vh !important;
+.content {
+  flex: 1;
+  overflow-y: auto;
+  height: 100vh;
 }
 
 /* ── Page Sections ────────────────────────────────────────────────────────── */
-/*.page { display: none; padding: 28px; max-width: 1100px; }
-.page.active { display: block; }*/
-/* 가장 정확한 타겟팅 방식 */
-[data-testid="stMainBlockContainer"] {
-    width: 100% !important;
-    max-width: none !important;      /* initial보다 none이 더 확실하게 너비를 홥보합니다 */
-    min-width: auto !important;
-    padding: 5rem 3rem 2rem !important; 
-}
-
-/* (선택 사항) 만약 화면 상단의 미세한 여백까지 없애고 싶다면
-[data-testid="stAppViewBlockContainer"] {
-    padding-top: 0rem !important;
-}*/
+.page { display: none; padding: 28px; max-width: 1100px; }
+.page.active { display: block; }
 
 /* ── Paw Watermark ────────────────────────────────────────────────────────── */
 .paw-bg {
   position: fixed;
-  right: -39px;
-  bottom: 22px;
-  font-size: 130px;
+  right: -40px;
+  bottom: -40px;
+  font-size: 380px;
   opacity: 0.07;
   color: #E8A598;
   pointer-events: none;
-  z-index: -1;
+  z-index: 0;
   transform: rotate(15deg);
   line-height: 1;
 }
