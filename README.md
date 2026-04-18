@@ -41,6 +41,8 @@ paw-ong/
 │   ├── matching.py          # [Page 3] 사용자 성향 기반 매칭 검사
 │   ├── guide.py             # [Page 4] 입양 안내 및 양육 가이드
 │   └── story.py             # [Page 5] 입양 후기 및 커뮤니티
+├── utils/                   # 공통 함수
+│   ├── file_loader.py       # 파일 로더 함수
 ├── .gitignore               # Git 추적 제외 설정 파일
 ├── README.md                # 프로젝트 설명 문서
 ├── app.py                   # 서비스 시작점
