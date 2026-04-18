@@ -35,7 +35,7 @@ paw-ong/
 │   └── dog_list.csv         # [Core] 반려견 및 매칭 데이터셋
 ├── js/                      
 │   └── app.js               # 자바스크립트 로직
-├── pages/                   # Streamlit 멀티 페이지 구성
+├── sections/                # Streamlit 멀티 페이지 구성
 │   ├── 1_doglist.py         # [Page 2] 반려견 리스트 및 필터링
 │   ├── 2_matching.py        # [Page 3] 사용자 성향 기반 매칭 검사
 │   ├── 3_guide.py           # [Page 4] 입양 안내 및 양육 가이드
