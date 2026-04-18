@@ -44,5 +44,5 @@ paw-ong/
 ├── .gitignore               # Git 추적 제외 설정 파일
 ├── README.md                # 프로젝트 설명 문서
 ├── app.py                   # 서비스 시작점
-├── index.html               # 기본 HTML 구조
+├── sample_ui.html           # 기본 HTML 구조
 └── requirements.txt         # 설치 라이브러리 목록 (streamlit, pandas 등)
