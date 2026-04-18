@@ -12,6 +12,11 @@ body {
 [data-testid="stAppViewContainer"] {
     background-color: #FDF6F0 !important;
 }
+/* Streamlit 상단 헤더 숨기기 */
+[data-testid="stHeader"] {
+    background: #FDF6F0 !important;
+    border-bottom: 1px solid #F0E4DC;
+}
 h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 
 /* ── App Layout ───────────────────────────────────────────────────────────── */
@@ -410,18 +415,19 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 }
 .table-head {
   display: grid;
-  grid-template-columns: 48px 68px 1fr 56px 52px 120px 100px 64px;
+  grid-template-columns: 56px 68px 1fr 64px 52px 100px 100px 64px;
   padding: 11px 16px;
   background: #FDE8E4;
   font-weight: 700;
   font-size: 12px;
   color: #3D2B1F;
   border-radius: 14px 14px 0 0;
+  align-items: center;
 }
 .table-row {
   display: grid;
-  grid-template-columns: 48px 68px 1fr 56px 52px 120px 100px 64px;
-  padding: 11px 16px;
+  grid-template-columns: 56px 68px 1fr 64px 52px 100px 100px 64px;
+  padding: 8px 16px;
   border-bottom: 1px solid #F8F3F0;
   font-size: 13px;
   align-items: center;
