@@ -88,10 +88,10 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 }
 
 /* ── Main Content ─────────────────────────────────────────────────────────── */
-.content {
-  flex: 1;
-  overflow-y: auto;
-  height: 100vh;
+[data-testid="stMain"] {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  height: 100vh !important;
 }
 
 /* ── Page Sections ────────────────────────────────────────────────────────── */
