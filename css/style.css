@@ -18,11 +18,11 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
 }
 
 /* ── Sidebar ──────────────────────────────────────────────────────────────── */
-.sidebar {
-  width: 240px;
+[data-testid="stSidebar"] {
+  width: 240px !important;
   min-width: 240px;
-  background: #F5EDE8;
-  display: flex;
+  background: #F5EDE8 !important;
+  display: flex !important;
   flex-direction: column;
   position: sticky;
   top: 0;
@@ -37,6 +37,7 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   gap: 10px;
   padding: 16px;
   flex-shrink: 0;
+  margin: -1rem -1rem 1rem -1rem; /* 사이드바 기본 여백 제거 및 위치 조정 */
 }
 .logo-icon { font-size: 22px; }
 .logo-text {
@@ -46,18 +47,22 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   color: #3D2B1F;
 }
 
-.nav {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 10px 8px;
-  flex: 1;
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 0px !important;
+  flex: 1 !important;
+  height: 100% !important;
 }
-.nav-btn {
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {
   background: transparent;
   border: none;
   border-radius: 10px;
   padding: 10px 14px;
+  display: flex !important;
+  justify-content: flex-start !important; 
+  align-items: center !important;
   text-align: left;
   font-size: 14px;
   font-family: 'Noto Sans KR', sans-serif;
@@ -66,12 +71,13 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   transition: background 0.18s, color 0.18s;
   width: 100%;
 }
-.nav-btn:hover { background: #EAD5CC; color: #3D2B1F; }
-.nav-btn.active {
+[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"]:hover { background: #EAD5CC; color: #3D2B1F; }
+/* TODO 활성화된 버튼 스타일 (session_state와 연동 후 수정) */
+/* .nav-btn.active {
   background: #E8A598;
   color: white;
   font-weight: 700;
-}
+} */
 
 .sidebar-footer {
   padding: 16px;
