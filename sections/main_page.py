@@ -17,34 +17,31 @@ def _load_static_data():
     return _safe_json(get_stats(df=df)), _safe_json(get_region_stats(df=df))
 
 
-def _load_featured_json():
-    """추천견 — 새로고침마다 랜덤 선택, 캐시 미적용."""
-    return _safe_json(get_featured_dogs())
-
-
 def render():
     css_content = load_resource("css/style.css")
     js_content  = load_resource("js/app.js")
 
-    # CSV → JSON 직렬화 (Python → JS 전역변수로 주입)
-    # stats/regions는 캐시, featured는 매번 랜덤 선택
     try:
         stats_json, regions_json = _load_static_data()
-        featured_json = _load_featured_json()
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
         return
 
-    html_code = f"""
+    # 추천견 — session_state에 저장해 버튼 클릭 후 재렌더링 시에도 같은 강아지 유지
+    # (새 세션 시작 시 또는 메인 페이지 첫 진입 시에만 새로 뽑음)
+    if "main_featured_dogs" not in st.session_state:
+        st.session_state.main_featured_dogs = get_featured_dogs()
+    featured_dogs = st.session_state.main_featured_dogs
+
+    # ── 상단 iframe: 히어로 + 통계 ──────────────────────────────────────────
+    top_html = f"""
     <style>{css_content}</style>
     <script>
-      const FEATURED_DOGS = {featured_json};
-      const STATS         = {stats_json};
-      const REGIONS       = {regions_json};
+      const STATS   = {stats_json};
+      const REGIONS = {regions_json};
     </script>
     <script>{js_content}</script>
 
-    <!-- ─── PAGE 1: 메인 ──────────────────────────────────────────────── -->
     <section id="page-main" class="page active">
       <div class="paw-bg">🐾</div>
 
@@ -58,17 +55,72 @@ def render():
 
       <!-- 통계 카드 -->
       <div class="stats-row" id="stats-row"></div>
+    </section>
+    """
+    components.html(top_html, height=560)
 
-      <!-- 추천견 -->
-      <div class="section-header">
-        <div>
-          <div class="sec-title">🐶 이달의 추천견 🩷</div>
-          <div class="sec-sub">보호소에서 기다리는 친구들을 소개합니다</div>
-        </div>
-        <button class="btn-outline" onclick="navigate('list')">전체 보기 →</button>
+    # ── 이달의 추천견 (Streamlit 네이티브 — iframe 밖) ──────────────────────
+    # iframe 밖에서 렌더링해야 st.button으로 session_state를 통한 페이지 이동이 가능
+    st.markdown("""
+    <style>
+    /* 추천견 입양 신청 버튼 스타일 */
+    div[data-testid="stButton"][class*="st-key-featured_btn"] > button {
+        background: #E8A598;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 7px 0;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'Noto Sans KR', sans-serif;
+        width: 100%;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 0;
+    }
+    div[data-testid="stButton"][class*="st-key-featured_btn"] > button:hover {
+        background: #7BAE8A;
+        color: white;
+    }
+    </style>
+    <div class="section-header" style="padding: 0 4px; margin-bottom: 10px;">
+      <div>
+        <div class="sec-title">🐶 이달의 추천견 🩷</div>
+        <div class="sec-sub">보호소에서 기다리는 친구들을 소개합니다</div>
       </div>
-      <div class="dog-cards" id="featured-dogs"></div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    EMOJIS = ['🦮', '🐩', '🐕‍🦺']
+    COLORS = ['#F2C4CE', '#C8E6C9', '#FDE8E4']
+
+    cols = st.columns(3)
+    for i, (col, dog) in enumerate(zip(cols, featured_dogs)):
+        with col:
+            st.markdown(f"""
+            <div class="dog-card">
+              <div class="dog-card-img" style="background:{COLORS[i % 3]}">{EMOJIS[i % 3]}</div>
+              <div class="dog-card-body">
+                <div class="dog-card-name">{dog['이름']}</div>
+                <div class="dog-card-info">{dog['품종']} · {dog['나이']} · {dog['성별']}</div>
+                <div class="dog-card-region">📍 {dog['지역']}</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("입양 신청 →", key=f"featured_btn_{i}", use_container_width=True):
+                st.session_state.page = "dog_list"
+                st.session_state.selected_dog_id = int(dog['id'])
+                st.rerun()
+
+    # ── 하단 iframe: 지역별 현황 + 3단계 프로세스 ──────────────────────────
+    bottom_html = f"""
+    <style>{css_content}</style>
+    <script>
+      const REGIONS = {regions_json};
+    </script>
+    <script>{js_content}</script>
+
+    <section id="page-main" class="page active">
       <!-- 지역별 현황 -->
       <div class="region-section card">
         <div class="sec-title">📍 지역별 현황 🌿</div>
@@ -100,11 +152,9 @@ def render():
       </div>
     </section>
     """
+    components.html(bottom_html, height=480)
 
-    components.html(html_code, height=1140)
-
-    # components.html()은 null-origin iframe이라 window.top 접근이 SecurityError를 발생시킴.
-    # CTA 버튼은 iframe 밖 Streamlit 네이티브 버튼으로 처리.
+    # ── CTA 버튼 (iframe 밖 Streamlit 네이티브) ─────────────────────────────
     st.markdown("""
     <style>
     div[data-testid="stButton"].cta-btn > button {

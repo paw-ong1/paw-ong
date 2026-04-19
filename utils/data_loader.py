@@ -18,6 +18,8 @@ def get_featured_dogs(df=None, n=3):
         df = load_dog_df()
     cols = ['이름', '품종', '나이(월)', '성별', '지역', '크기']
     sample = df[cols].sample(min(n, len(df))).copy()
+    # dog_list.py의 id(= DataFrame 0-based index + 1)와 일치하도록 저장
+    sample['id'] = sample.index + 1
     sample['나이'] = sample['나이(월)'].apply(
         lambda m: (f"{int(m) // 12}살" if int(m) >= 12 else f"{int(m)}개월") if pd.notna(m) else "나이 미상"
     )
