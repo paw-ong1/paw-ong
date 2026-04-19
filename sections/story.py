@@ -111,10 +111,6 @@ def render():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
 
-    header {{visibility:hidden;}}
-    #MainMenu {{visibility:hidden;}}
-    footer {{visibility:hidden;}}
-
     html, body, [class*="css"] {{
         font-family:'Noto Sans KR', sans-serif;
         background:#FDF6F0;

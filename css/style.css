@@ -1,6 +1,10 @@
 /* ── Google Fonts ─────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Noto+Sans+KR:wght@300;400;600;700&display=swap');
 
+header {visibility:hidden;}
+#MainMenu {visibility:hidden;}
+footer {visibility:hidden;}
+
 /* ── Reset & Base ─────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -104,7 +108,7 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
     width: 100% !important;
     max-width: none !important;      /* initial보다 none이 더 확실하게 너비를 홥보합니다 */
     min-width: auto !important;
-    padding: 5rem 3rem 2rem !important; 
+    padding: 1rem 2rem 2rem !important; 
 }
 
 /* (선택 사항) 만약 화면 상단의 미세한 여백까지 없애고 싶다면
