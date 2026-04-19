@@ -57,7 +57,7 @@ def render():
       <div class="stats-row" id="stats-row"></div>
     </section>
     """
-    components.html(top_html, height=560)
+    components.html(top_html, height=450)
 
     # ── 이달의 추천견 (Streamlit 네이티브 — iframe 밖) ──────────────────────
     # iframe 밖에서 렌더링해야 st.button으로 session_state를 통한 페이지 이동이 가능
@@ -152,7 +152,7 @@ def render():
       </div>
     </section>
     """
-    components.html(bottom_html, height=480)
+    components.html(bottom_html, height=400)
 
     # ── CTA 버튼 (iframe 밖 Streamlit 네이티브) ─────────────────────────────
     st.markdown("""
