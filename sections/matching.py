@@ -11,22 +11,21 @@ from pathlib import Path
 # ══════════════════════════════════════════════════════════════════════════════
 @st.cache_data
 def load_data():
-    base       = Path(__file__).parent.parent
-    breeds_df  = pd.read_csv(base / "data" / "dog_breeds.csv",          encoding="utf-8-sig")
-    korea_df   = pd.read_csv(base / "data" / "korea_dog_list_fixed.csv", encoding="utf-8-sig")
+    base      = Path(__file__).parent.parent
+    breeds_df = pd.read_csv(base / "data" / "dog_breeds.csv",           encoding="utf-8-sig")
+    korea_df  = pd.read_csv(base / "data" / "korea_dog_list_fixed.csv", encoding="utf-8-sig")
     return breeds_df, korea_df
 
 
 @st.cache_data
 def build_breed_image_map():
-    """품종 → 사용 가능한 이미지 경로 목록을 캐싱."""
+    """품종 → 사용 가능한 이미지 경로 목록 캐싱."""
     base    = Path(__file__).parent.parent
     img_dir = base / "assets" / "images" / "dogs"
     try:
         _, korea_df = load_data()
     except Exception:
         return {}
-
     breed_map: dict = {}
     for _, row in korea_df.iterrows():
         breed  = row.get("품종", "")
@@ -112,8 +111,7 @@ QUESTIONS = [
     {
         "id": "walk_time", "section": 1,
         "label": "Q7. 하루 평균 산책 가능 시간은?",
-        "options": ["15분 미만", "15~30분", "30분~1시간",
-                    "1~1.5시간", "1.5~2시간", "2시간 이상"],
+        "options": ["15분 미만", "15~30분", "30분~1시간", "1~1.5시간", "1.5~2시간", "2시간 이상"],
         "weights": {"15분 미만": 1, "15~30분": 1, "30분~1시간": 2,
                     "1~1.5시간": 3, "1.5~2시간": 4, "2시간 이상": 5},
     },
@@ -149,8 +147,7 @@ QUESTIONS = [
     {
         "id": "family_member", "section": 1,
         "label": "Q12. 강아지를 함께 돌봐줄 사람이 있나요?",
-        "options": ["나 혼자", "파트너 / 배우자", "가족 2명",
-                    "가족 3명 이상", "전문 펫시터 이용 가능"],
+        "options": ["나 혼자", "파트너 / 배우자", "가족 2명", "가족 3명 이상", "전문 펫시터 이용 가능"],
         "weights": {"나 혼자": 1, "파트너 / 배우자": 2, "가족 2명": 3,
                     "가족 3명 이상": 4, "전문 펫시터 이용 가능": 3},
     },
@@ -292,7 +289,6 @@ QUESTIONS = [
     },
 ]
 
-# 섹션별 질문 인덱스
 SECTION_QUESTIONS: dict = {}
 for _i, _q in enumerate(QUESTIONS):
     SECTION_QUESTIONS.setdefault(_q["section"], []).append(_i)
@@ -301,11 +297,8 @@ for _i, _q in enumerate(QUESTIONS):
 # ══════════════════════════════════════════════════════════════════════════════
 # 매칭 알고리즘
 # ══════════════════════════════════════════════════════════════════════════════
-def compute_breed_score(breed_row: pd.Series, answers: dict, importance: dict,
-                        shed_w: float = 1.0, bark_w: float = 1.0,
-                        energy_w: float = 1.0, social_w: float = 1.0,
-                        train_w: float = 1.0) -> float:
-
+def compute_breed_score(breed_row, answers, importance,
+                        shed_w=1.0, bark_w=1.0, energy_w=1.0, social_w=1.0, train_w=1.0):
     def imp(q_id):
         return importance.get(q_id, 1.0)
 
@@ -317,45 +310,46 @@ def compute_breed_score(breed_row: pd.Series, answers: dict, importance: dict,
         max_score += w
         score += w * max(0.0, 1.0 - abs(float(val) - float(ideal)) / 4.0)
 
-    energy      = float(breed_row.get("에너지_레벨", 3) or 3)
-    walk_n      = answers.get("walk_time", 2)
-    act_n       = answers.get("activity_pref", 2)
-    trainability= float(breed_row.get("훈련_용이성", 3) or 3)
-    exp_n       = answers.get("experience", 2)
-    train_n     = answers.get("training", 2)
-    bark        = float(breed_row.get("짖음_빈도", 3) or 3)
-    noise_n     = answers.get("noise_tolerance", 3)
-    shed        = float(breed_row.get("털_빠짐", 3) or 3)
-    shed_n      = answers.get("shed_tolerance", 3)
-    groom       = float(breed_row.get("그루밍_필요성", 3) or 3)
-    groom_n     = answers.get("grooming", 2)
-    apt         = float(breed_row.get("아파트_적합성", 3) or 3)
-    housing_n   = answers.get("housing_type", 2)
-    beginner    = float(breed_row.get("초보_적합성", 3) or 3)
-    child_score = float(breed_row.get("아이_친화력", 3) or 3)
-    dog_fr      = float(breed_row.get("타견_친화력", 3) or 3)
-    dog_need    = answers.get("dog_friendly", 2)
-    energy_pref = answers.get("energy_pref", 2)
-    stranger    = float(breed_row.get("낯선사람_친화력", 3) or 3)
-    stranger_p  = answers.get("stranger_friendly", 3)
-    exercise    = float(breed_row.get("운동량", 3) or 3)
+    energy       = float(breed_row.get("에너지_레벨", 3) or 3)
+    walk_n       = answers.get("walk_time", 2)
+    act_n        = answers.get("activity_pref", 2)
+    trainability = float(breed_row.get("훈련_용이성", 3) or 3)
+    exp_n        = answers.get("experience", 2)
+    train_n      = answers.get("training", 2)
+    bark         = float(breed_row.get("짖음_빈도", 3) or 3)
+    noise_n      = answers.get("noise_tolerance", 3)
+    shed         = float(breed_row.get("털_빠짐", 3) or 3)
+    shed_n       = answers.get("shed_tolerance", 3)
+    groom        = float(breed_row.get("그루밍_필요성", 3) or 3)
+    groom_n      = answers.get("grooming", 2)
+    apt          = float(breed_row.get("아파트_적합성", 3) or 3)
+    housing_n    = answers.get("housing_type", 2)
+    beginner     = float(breed_row.get("초보_적합성", 3) or 3)
+    child_score  = float(breed_row.get("아이_친화력", 3) or 3)
+    dog_fr       = float(breed_row.get("타견_친화력", 3) or 3)
+    dog_need     = answers.get("dog_friendly", 2)
+    energy_pref  = answers.get("energy_pref", 2)
+    stranger     = float(breed_row.get("낯선사람_친화력", 3) or 3)
+    stranger_p   = answers.get("stranger_friendly", 3)
+    exercise     = float(breed_row.get("운동량", 3) or 3)
 
-    add(15 * energy_w,  energy,      (walk_n + act_n) / 2,     "walk_time")
-    add(10 * train_w,   trainability,(exp_n + train_n) / 2,    "training")
-    add(10 * bark_w,    bark,        6 - noise_n,               "noise_tolerance")
-    add(10 * shed_w,    shed,        6 - shed_n,                "shed_tolerance")
-    add(8,              groom,       groom_n,                   "grooming")
-    add(12,             apt,         housing_n,                 "housing_type")
-    add(10 * train_w,   beginner,    exp_n,                     "experience")
-    add(10 * energy_w,  energy,      energy_pref,               "energy_pref")
-    add(8  * energy_w,  exercise,    walk_n,                    "walk_time")
-    add(6,              stranger,    stranger_p,                "stranger_friendly")
-    add(8  * social_w,  dog_fr,      dog_need,                  "dog_friendly")
+    add(15 * energy_w, energy,       (walk_n + act_n) / 2,  "walk_time")
+    add(10 * train_w,  trainability, (exp_n + train_n) / 2, "training")
+    add(10 * bark_w,   bark,         6 - noise_n,            "noise_tolerance")
+    add(10 * shed_w,   shed,         6 - shed_n,             "shed_tolerance")
+    add(8,             groom,        groom_n,                "grooming")
+    add(12,            apt,          housing_n,              "housing_type")
+    add(10 * train_w,  beginner,     exp_n,                  "experience")
+    add(10 * energy_w, energy,       energy_pref,            "energy_pref")
+    add(8  * energy_w, exercise,     walk_n,                 "walk_time")
+    add(6,             stranger,     stranger_p,             "stranger_friendly")
+    add(8  * social_w, dog_fr,       dog_need,               "dog_friendly")
 
     if answers.get("has_children"):
         add(15 * social_w, child_score, 5, "children")
     else:
-        max_score += 15; score += 15 * 0.5
+        max_score += 15
+        score     += 15 * 0.5
 
     if answers.get("allergy_sensitive"):
         al = answers.get("allergy_num", 3)
@@ -382,34 +376,37 @@ def filter_korea_dogs(korea_df, breed_name, answers, top_n=3):
     gp = answers.get("gender_pref", "상관없음")
     if gp in ("수컷", "암컷"):
         tmp = breed_df[breed_df["성별"] == gp]
-        if not tmp.empty: breed_df = tmp
+        if not tmp.empty:
+            breed_df = tmp
 
     age_map = {
-        "어린 퍼피 (3개월 미만)": (0, 3), "퍼피 (3~6개월)": (3, 6),
-        "어린 성견 (6개월~2년)": (6, 24), "성견 (2~5년)": (24, 60),
-        "시니어 (5~8년)": (60, 96), "노령견 (8년 이상)": (96, 999),
+        "어린 퍼피 (3개월 미만)": (0, 3),  "퍼피 (3~6개월)": (3, 6),
+        "어린 성견 (6개월~2년)":  (6, 24),  "성견 (2~5년)":   (24, 60),
+        "시니어 (5~8년)":        (60, 96), "노령견 (8년 이상)": (96, 999),
     }
     ap = answers.get("age_pref", "상관없음")
     if ap in age_map:
         lo, hi = age_map[ap]
         try:
             tmp = breed_df[breed_df["나이(월)"].astype(float).between(lo, hi)]
-            if not tmp.empty: breed_df = tmp
+            if not tmp.empty:
+                breed_df = tmp
         except Exception:
             pass
 
     region_map = {
-        "서울": ["서울"], "경기/인천": ["경기", "인천"],
+        "서울": ["서울"],       "경기/인천": ["경기", "인천"],
         "부산/경남": ["부산", "경남"], "대구/경북": ["대구", "경북"],
         "광주/전라": ["광주", "전북", "전남"], "대전/충청": ["대전", "충북", "충남", "세종"],
-        "강원": ["강원"], "제주": ["제주"],
+        "강원": ["강원"],       "제주": ["제주"],
     }
     rp = answers.get("region_pref", "상관없음")
     if rp in region_map:
         kws  = region_map[rp]
         mask = breed_df["지역"].apply(lambda x: any(k in str(x) for k in kws))
         tmp  = breed_df[mask]
-        if not tmp.empty: breed_df = tmp
+        if not tmp.empty:
+            breed_df = tmp
 
     return breed_df.head(top_n)
 
@@ -417,10 +414,12 @@ def filter_korea_dogs(korea_df, breed_name, answers, top_n=3):
 # ══════════════════════════════════════════════════════════════════════════════
 # 자동 컬러 태그
 # ══════════════════════════════════════════════════════════════════════════════
-def make_tags(breed_row: pd.Series) -> list:
+def make_tags(breed_row) -> list:
     def fv(k, default=3):
-        try: return float(breed_row.get(k, default) or default)
-        except: return default
+        try:
+            return float(breed_row.get(k, default) or default)
+        except Exception:
+            return default
 
     apt   = fv("아파트_적합성")
     shed  = fv("털_빠짐", 5)
@@ -433,18 +432,18 @@ def make_tags(breed_row: pd.Series) -> list:
     size  = str(breed_row.get("크기_분류", ""))
 
     TAG = [
-        (apt  >= 4,             "#아파트OK",   "background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7"),
-        (shed <= 2,             "#털빠짐적음", "background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9"),
-        (child >= 4,            "#어린이친화", "background:#FCE4EC;color:#C62828;border:1px solid #F48FB1"),
-        (beg  >= 4,             "#초보자OK",   "background:#FFF8E1;color:#F57F17;border:1px solid #FFE082"),
-        (bark <= 2,             "#조용한편",   "background:#F3E5F5;color:#6A1B9A;border:1px solid #CE93D8"),
-        (enrg <= 2,             "#실내파",     "background:#FBE9E7;color:#BF360C;border:1px solid #FFAB91"),
-        (enrg >= 4,             "#활동파",     "background:#E8EAF6;color:#283593;border:1px solid #9FA8DA"),
-        (dog_f >= 4,            "#다견OK",     "background:#E0F7FA;color:#006064;border:1px solid #80DEEA"),
-        (train >= 4,            "#훈련쉬움",   "background:#F1F8E9;color:#33691E;border:1px solid #C5E1A5"),
-        (shed <= 1,             "#저알레르기", "background:#EDE7F6;color:#4527A0;border:1px solid #B39DDB"),
-        ("대형" in size or "초대형" in size, "#대형견", "background:#EFEBE9;color:#4E342E;border:1px solid #BCAAA4"),
-        ("소형" in size or "토이" in size,   "#소형견", "background:#FFF3E0;color:#E65100;border:1px solid #FFCC80"),
+        (apt  >= 4,                           "#아파트OK",   "background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7"),
+        (shed <= 2,                           "#털빠짐적음", "background:#E3F2FD;color:#1565C0;border:1px solid #90CAF9"),
+        (child >= 4,                          "#어린이친화", "background:#FCE4EC;color:#C62828;border:1px solid #F48FB1"),
+        (beg  >= 4,                           "#초보자OK",   "background:#FFF8E1;color:#F57F17;border:1px solid #FFE082"),
+        (bark <= 2,                           "#조용한편",   "background:#F3E5F5;color:#6A1B9A;border:1px solid #CE93D8"),
+        (enrg <= 2,                           "#실내파",     "background:#FBE9E7;color:#BF360C;border:1px solid #FFAB91"),
+        (enrg >= 4,                           "#활동파",     "background:#E8EAF6;color:#283593;border:1px solid #9FA8DA"),
+        (dog_f >= 4,                          "#다견OK",     "background:#E0F7FA;color:#006064;border:1px solid #80DEEA"),
+        (train >= 4,                          "#훈련쉬움",   "background:#F1F8E9;color:#33691E;border:1px solid #C5E1A5"),
+        (shed <= 1,                           "#저알레르기", "background:#EDE7F6;color:#4527A0;border:1px solid #B39DDB"),
+        ("대형" in size or "초대형" in size,  "#대형견",    "background:#EFEBE9;color:#4E342E;border:1px solid #BCAAA4"),
+        ("소형" in size or "토이" in size,    "#소형견",    "background:#FFF3E0;color:#E65100;border:1px solid #FFCC80"),
     ]
     return [(name, sty) for cond, name, sty in TAG if cond][:6]
 
@@ -453,7 +452,7 @@ def make_tags(breed_row: pd.Series) -> list:
 # Claude AI 추천 이유
 # ══════════════════════════════════════════════════════════════════════════════
 def get_ai_reason(breed_name, score, answers, importance, breed_row):
-    imp_qs = [qid for qid, v in importance.items() if v >= 2.0]
+    imp_qs  = [qid for qid, v in importance.items() if v >= 2.0]
     imp_str = ", ".join(imp_qs) if imp_qs else "없음"
     try:
         prompt = (
@@ -487,82 +486,340 @@ def get_ai_reason(breed_name, score, answers, importance, breed_row):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 커스텀 CSS (기존 디자인 시스템 유지 + 신규 요소 추가)
+# 이미지 렌더링 헬퍼 — 고정 비율 + object-fit:cover  (수정사항 ③)
+# ══════════════════════════════════════════════════════════════════════════════
+def render_fixed_image(img_path, height_px=200, fallback_emoji="🐾"):
+    """항상 동일한 높이의 박스에 이미지를 채워 보여준다."""
+    if img_path and os.path.exists(img_path):
+        import base64
+        with open(img_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode()
+        ext = Path(img_path).suffix.lstrip(".")
+        mime = "image/jpeg" if ext in ("jpg", "jpeg") else f"image/{ext}"
+        st.markdown(
+            f'<div style="width:100%;height:{height_px}px;border-radius:12px;overflow:hidden;">'
+            f'<img src="data:{mime};base64,{b64}" '
+            f'style="width:100%;height:100%;object-fit:cover;border-radius:12px;" />'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            f'<div style="width:100%;height:{height_px}px;border-radius:12px;'
+            f'background:#F5EDE8;display:flex;align-items:center;'
+            f'justify-content:center;font-size:52px;">{fallback_emoji}</div>',
+            unsafe_allow_html=True,
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 위시리스트 강아지 상세 정보 화면  (수정사항 ⑤)
+# ══════════════════════════════════════════════════════════════════════════════
+def render_wish_detail(dog_id: str, korea_df, breeds_df):
+    """korea_df + breeds_df를 조인해 강아지 상세 정보를 렌더링."""
+    dog_rows = korea_df[korea_df["아이디"] == dog_id]
+    if dog_rows.empty:
+        st.error("강아지 정보를 찾을 수 없습니다.")
+        return
+    dog = dog_rows.iloc[0]
+    breed_name = str(dog.get("품종", ""))
+
+    breed_rows = breeds_df[breeds_df["품종명"] == breed_name]
+    breed_info = breed_rows.iloc[0] if not breed_rows.empty else pd.Series()
+
+    # 상단 뒤로 가기
+    if st.button("← 매칭 결과로 돌아가기", key="back_from_detail"):
+        st.session_state.match_step = "result"
+        st.session_state.wish_detail_dog_id = None
+        st.rerun()
+
+    # ── 강아지 기본 정보 ──────────────────────────────────────────────────────
+    img_path = get_dog_image_path(dog_id)
+    col_photo, col_basic = st.columns([1, 2])
+
+    with col_photo:
+        render_fixed_image(img_path, height_px=280)
+
+    with col_basic:
+        try:
+            age_m   = int(float(dog.get("나이(월)", 0)))
+            age_str = f"{age_m // 12}살 {age_m % 12}개월" if age_m >= 12 else f"{age_m}개월"
+        except Exception:
+            age_str = "?"
+
+        def star(val, max_v=5):
+            try:
+                n = int(float(val))
+            except Exception:
+                n = 0
+            return "⭐" * n + "☆" * (max_v - n)
+
+        vacc   = "✅ 완료" if str(dog.get("예방접종", "")).strip() == "완료" else "⬜ 미완료"
+        deworm = "✅ 완료" if str(dog.get("구충여부", "")).strip() == "완료" else "⬜ 미완료"
+        neuter = "✅ 완료" if str(dog.get("중성화", "")).strip() == "완료" else "⬜ 미완료"
+
+        colors = [c for c in [dog.get("색상1"), dog.get("색상2"), dog.get("색상3")] if c and str(c) != "nan"]
+        color_str = " / ".join(colors) if colors else "정보 없음"
+
+        st.markdown(
+            f'<div style="font-family:\'Gowun Batang\',serif;font-size:32px;font-weight:700;'
+            f'color:#3D2B1F;margin-bottom:8px;">🐾 {dog.get("이름", "?")}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div style="font-size:18px;color:#7BAE8A;font-weight:600;margin-bottom:16px;">'
+            f'{breed_name} · {age_str} · {dog.get("성별","?")} · {dog.get("지역","?")}</div>',
+            unsafe_allow_html=True,
+        )
+
+        # 수치 격자
+        st.markdown(
+            f'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">'
+            f'<div style="background:#F5EDE8;border-radius:10px;padding:10px;text-align:center">'
+            f'<div style="font-size:13px;color:#A08070">건강 상태</div>'
+            f'<div style="font-size:16px;font-weight:700;color:#3D2B1F">{star(dog.get("건강 상태",3))}</div></div>'
+            f'<div style="background:#F5EDE8;border-radius:10px;padding:10px;text-align:center">'
+            f'<div style="font-size:13px;color:#A08070">사회성</div>'
+            f'<div style="font-size:16px;font-weight:700;color:#3D2B1F">{star(dog.get("사회도",3))}</div></div>'
+            f'<div style="background:#F5EDE8;border-radius:10px;padding:10px;text-align:center">'
+            f'<div style="font-size:13px;color:#A08070">친화도</div>'
+            f'<div style="font-size:16px;font-weight:700;color:#3D2B1F">{star(dog.get("친화도",3))}</div></div>'
+            f'<div style="background:#F5EDE8;border-radius:10px;padding:10px;text-align:center">'
+            f'<div style="font-size:13px;color:#A08070">활동성</div>'
+            f'<div style="font-size:16px;font-weight:700;color:#3D2B1F">{star(dog.get("활동성",3))}</div></div>'
+            f'<div style="background:#E8F5E9;border-radius:10px;padding:10px;text-align:center">'
+            f'<div style="font-size:13px;color:#A08070">예방접종</div>'
+            f'<div style="font-size:14px;font-weight:700;color:#2E7D32">{vacc}</div></div>'
+            f'<div style="background:#E8F5E9;border-radius:10px;padding:10px;text-align:center">'
+            f'<div style="font-size:13px;color:#A08070">중성화</div>'
+            f'<div style="font-size:14px;font-weight:700;color:#2E7D32">{neuter}</div></div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f'<div style="font-size:15px;color:#5C4535;line-height:2">'
+            f'📏 <b>크기:</b> {dog.get("크기","?")} &nbsp;|&nbsp; '
+            f'✂️ <b>털 길이:</b> {dog.get("털길이","?")} &nbsp;|&nbsp; '
+            f'🎨 <b>색상:</b> {color_str} &nbsp;|&nbsp; '
+            f'💉 <b>구충:</b> {deworm}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ── 상세 설명 ─────────────────────────────────────────────────────────────
+    st.markdown("---")
+    if dog.get("상세설명"):
+        st.markdown(
+            f'<div style="background:#FDFAF8;border-radius:14px;padding:16px 20px;'
+            f'font-size:17px;color:#3D2B1F;line-height:1.9;border:1px solid #F0E4DC">'
+            f'📝 <b>상세 설명</b><br><br>{dog["상세설명"]}</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ── 품종 정보 (join) ──────────────────────────────────────────────────────
+    if not breed_info.empty:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="font-size:22px;font-weight:700;color:#3D2B1F;margin-bottom:14px">'
+            f'🐕 {breed_name} 품종 가이드</div>',
+            unsafe_allow_html=True,
+        )
+
+        def bv(k):
+            try:
+                return int(float(breed_info.get(k, 0) or 0))
+            except Exception:
+                return 0
+
+        def bar(val, max_v=5, color="#E8A598"):
+            pct = int(val / max_v * 100)
+            return (
+                f'<div style="background:#F0E4DC;border-radius:6px;height:8px;margin-top:4px">'
+                f'<div style="background:{color};border-radius:6px;height:8px;width:{pct}%"></div>'
+                f'</div>'
+            )
+
+        metrics = [
+            ("⚡ 에너지 레벨",    bv("에너지_레벨"),    "#E8A598"),
+            ("🎓 훈련 용이성",    bv("훈련_용이성"),    "#7BAE8A"),
+            ("🧹 털 빠짐",        bv("털_빠짐"),        "#90CAF9"),
+            ("🔊 짖음 빈도",      bv("짖음_빈도"),      "#CE93D8"),
+            ("🏢 아파트 적합성",  bv("아파트_적합성"), "#7BAE8A"),
+            ("👶 아이 친화력",    bv("아이_친화력"),    "#F48FB1"),
+            ("🐕 타견 친화력",    bv("타견_친화력"),    "#80DEEA"),
+            ("🌿 초보자 적합성",  bv("초보_적합성"),   "#FFE082"),
+        ]
+
+        cols = st.columns(4)
+        for idx, (label, val, color) in enumerate(metrics):
+            with cols[idx % 4]:
+                st.markdown(
+                    f'<div style="background:white;border-radius:10px;padding:12px;'
+                    f'border:1px solid #F0E4DC;margin-bottom:8px">'
+                    f'<div style="font-size:14px;color:#5C4535;font-weight:600">{label}</div>'
+                    f'<div style="font-size:22px;font-weight:700;color:#3D2B1F;margin:6px 0">'
+                    f'{val}/5</div>'
+                    f'{bar(val, color=color)}'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+        if breed_info.get("기질"):
+            st.markdown(
+                f'<div style="background:#F5F9F6;border-radius:12px;padding:14px 18px;'
+                f'font-size:16px;color:#3D2B1F;border:1px solid #C8E6C9;margin-top:10px">'
+                f'💡 <b>기질:</b> {breed_info["기질"]}</div>',
+                unsafe_allow_html=True,
+            )
+        if breed_info.get("설명"):
+            st.markdown(
+                f'<div style="background:#FDFAF8;border-radius:12px;padding:14px 18px;'
+                f'font-size:16px;color:#5C4535;border:1px solid #F0E4DC;margin-top:10px;line-height:1.8">'
+                f'📖 {breed_info["설명"]}</div>',
+                unsafe_allow_html=True,
+            )
+
+        # 체고·체중 요약
+        wm_lo = breed_info.get("최소_체중_수컷", "?")
+        wm_hi = breed_info.get("최대_체중_수컷", "?")
+        wf_lo = breed_info.get("최소_체중_암컷", "?")
+        wf_hi = breed_info.get("최대_체중_암컷", "?")
+        life  = breed_info.get("기대_수명", "?")
+        st.markdown(
+            f'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">'
+            f'<div style="background:#FFF8E1;border-radius:10px;padding:12px 18px;font-size:15px">'
+            f'⚖️ <b>체중</b><br>수컷 {wm_lo}~{wm_hi}lbs<br>암컷 {wf_lo}~{wf_hi}lbs</div>'
+            f'<div style="background:#E8F5E9;border-radius:10px;padding:12px 18px;font-size:15px">'
+            f'📅 <b>기대 수명</b><br>{life}등급</div>'
+            f'<div style="background:#E3F2FD;border-radius:10px;padding:12px 18px;font-size:15px">'
+            f'🎨 <b>색상</b><br>{str(breed_info.get("색상","?"))[:30]}</div>'
+            f'<div style="background:#F3E5F5;border-radius:10px;padding:12px 18px;font-size:15px">'
+            f'✂️ <b>털 유형</b><br>{str(breed_info.get("털_유형","?"))[:20]}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+    # ── 입양 안내 연동 버튼 ───────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button(f"📖 {breed_name} 입양 안내 보기", use_container_width=True, type="primary"):
+        st.session_state.recommended_breed = breed_name
+        st.session_state.page = "guide"
+        st.rerun()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CSS  (수정사항 ④ — 폰트 크기 전반 상향)
 # ══════════════════════════════════════════════════════════════════════════════
 CUSTOM_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang&family=Noto+Sans+KR:wght@300;400;600;700&display=swap');
 
-.match-header { font-family:'Gowun Batang',serif; font-size:22px; font-weight:700; color:#3D2B1F; margin-bottom:4px; }
-.match-sub    { font-size:12px; color:#7BAE8A; margin-bottom:20px; }
-
-/* ── 섹션 스텝 진행바 ─────────────────────────────────────────────────────── */
-.step-progress {
-  display:flex; gap:0; align-items:center;
-  margin:16px 0 6px; width:100%;
+/* ── 기본 ─────────────────────────────────────────────────────────────────── */
+.match-header {
+  font-family:'Gowun Batang',serif; font-size:32px;
+  font-weight:700; color:#3D2B1F; margin-bottom:8px;
 }
+.match-sub { font-size:17px; color:#7BAE8A; margin-bottom:22px; }
+
+/* ── 섹션 스텝 ────────────────────────────────────────────────────────────── */
+.step-progress { display:flex; gap:0; align-items:center; margin:16px 0 6px; width:100%; }
 .step-dot {
-  width:38px; height:38px; border-radius:50%;
+  width:44px; height:44px; border-radius:50%;
   display:flex; align-items:center; justify-content:center;
-  font-size:13px; font-weight:700; flex-shrink:0; transition:all 0.25s;
+  font-size:16px; font-weight:700; flex-shrink:0; transition:all 0.25s;
 }
 .step-dot.done    { background:#7BAE8A; color:white; }
 .step-dot.current { background:#E8A598; color:white; box-shadow:0 0 0 4px #F2C4CE; }
 .step-dot.future  { background:#F0E4DC; color:#A08070; }
 .step-line        { flex:1; height:4px; border-radius:2px; background:#F0E4DC; }
 .step-line.done   { background:#7BAE8A; }
-.step-labels { display:flex; justify-content:space-between; margin-bottom:16px; }
-.step-lbl {
-  font-size:10px; color:#A08070; text-align:center;
-  width:38px; flex-shrink:0; line-height:1.4;
-}
+.step-labels      { display:flex; justify-content:space-between; margin-bottom:18px; }
+.step-lbl         { font-size:13px; color:#A08070; text-align:center; width:44px; flex-shrink:0; line-height:1.5; }
 .step-lbl.current { color:#E8A598; font-weight:700; }
 .step-lbl.done    { color:#7BAE8A; }
 
-/* ── 질문 카드 ────────────────────────────────────────────────────────────── */
+/* ── 질문 카드 ─────────────────────────────────────────────────────────────── */
 .q-card {
-  background:white; border-radius:14px; padding:16px 20px;
-  border:1px solid #F0E4DC; margin-bottom:14px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.04);
+  background:white; border-radius:16px; padding:22px 26px;
+  border:1px solid #F0E4DC; margin-bottom:18px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.05);
 }
-.q-label { font-size:14px; font-weight:700; color:#3D2B1F; margin-bottom:4px; }
+/* 질문 텍스트 */
+.q-card .q-label { font-size:20px; font-weight:700; color:#3D2B1F; margin-bottom:8px; }
 
-/* ── 결과 카드 ────────────────────────────────────────────────────────────── */
-.result-breed { font-family:'Gowun Batang',serif; font-size:20px; font-weight:700; color:#3D2B1F; }
+/* 라디오 버튼 글자 크기 */
+div[data-baseweb="radio"] label p,
+div[data-baseweb="radio"] label span {
+  font-size:16px !important;
+}
+
+/* 체크박스 글자 */
+div[data-baseweb="checkbox"] label p,
+div[data-baseweb="checkbox"] label span {
+  font-size:15px !important;
+}
+
+/* caption / st.caption 크기 */
+.stCaption p { font-size:14px !important; }
+
+/* expander 제목 */
+details summary p { font-size:18px !important; font-weight:600 !important; }
+
+/* ── 결과 카드 ─────────────────────────────────────────────────────────────── */
+.result-breed {
+  font-family:'Gowun Batang',serif; font-size:28px;
+  font-weight:700; color:#3D2B1F;
+}
 .result-score-badge {
   background:#E8A598; color:white; border-radius:20px;
-  padding:4px 14px; font-size:14px; font-weight:700;
-  display:inline-block; margin:8px 0;
+  padding:6px 20px; font-size:18px; font-weight:700;
+  display:inline-block; margin:10px 0;
 }
-.score-bar-track { background:#F0E4DC; border-radius:8px; height:10px; margin:6px 0; }
-.score-bar-fill  { background:linear-gradient(90deg,#E8A598,#7BAE8A); border-radius:8px; height:10px; }
+.score-bar-track { background:#F0E4DC; border-radius:8px; height:14px; margin:8px 0; }
+.score-bar-fill  { background:linear-gradient(90deg,#E8A598,#7BAE8A); border-radius:8px; height:14px; }
 
 /* ── 컬러 태그 ────────────────────────────────────────────────────────────── */
-.tag-row { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0; }
-.ctag    { border-radius:12px; padding:3px 10px; font-size:11px; font-weight:600; display:inline-block; }
+.tag-row { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+.ctag    { border-radius:14px; padding:5px 14px; font-size:13px; font-weight:700; display:inline-block; }
 
-/* ── AI 박스 ─────────────────────────────────────────────────────────────── */
+/* ── AI 박스 ──────────────────────────────────────────────────────────────── */
 .ai-box {
   background:linear-gradient(135deg,#FDE8E4,#F5F9F6);
-  border-radius:12px; padding:14px 16px; font-size:13px;
+  border-radius:14px; padding:18px 22px; font-size:16px;
   color:#3D2B1F; border:1px solid #F2C4CE;
-  margin-top:10px; line-height:1.7;
+  margin-top:12px; line-height:1.9;
 }
-.ai-label { font-size:11px; color:#7BAE8A; font-weight:700; margin-bottom:6px; }
+.ai-label { font-size:14px; color:#7BAE8A; font-weight:700; margin-bottom:10px; }
 
-/* ── 보호견 카드 ──────────────────────────────────────────────────────────── */
-.adopt-card {
-  background:white; border-radius:14px; padding:14px;
-  border:1px solid #F0E4DC; text-align:center;
+/* ── 강아지 이름·정보 ─────────────────────────────────────────────────────── */
+.dog-name-text {
+  font-weight:700; font-size:18px; color:#3D2B1F;
+  text-align:center; margin-top:12px;
+}
+.dog-info-text { font-size:15px; color:#7D5A50; text-align:center; margin-top:4px; line-height:1.7; }
+.dog-desc-text { font-size:13px; color:#A08070; text-align:center; margin-top:8px; line-height:1.6; }
+
+/* ── 품종 격자 정보 ───────────────────────────────────────────────────────── */
+.breed-grid-cell {
+  background:#F5EDE8; border-radius:10px; padding:12px;
+  font-size:15px; color:#5C4535; line-height:1.6;
 }
 
-/* ── 위시리스트 아이템 ───────────────────────────────────────────────────── */
+/* ── 위시리스트 ───────────────────────────────────────────────────────────── */
 .wish-item {
-  background:white; border-radius:10px; padding:10px 12px;
-  border:1px solid #F0E4DC; margin-bottom:8px; font-size:12px;
+  background:white; border-radius:12px; padding:12px 14px;
+  border:1px solid #F0E4DC; margin-bottom:10px;
 }
-.wish-name { font-weight:700; color:#3D2B1F; font-size:13px; }
-.wish-info { color:#7D5A50; margin-top:2px; }
+.wish-name { font-weight:700; color:#3D2B1F; font-size:16px; }
+.wish-info { color:#7D5A50; font-size:14px; margin-top:3px; }
+
+/* ── 전체 기본 폰트 오버라이드 ────────────────────────────────────────────── */
+section[data-testid="stAppViewContainer"] {
+  font-size: 16px;
+}
+.stMarkdown p { font-size:16px; line-height:1.7; }
+.stInfo p, .stWarning p { font-size:15px; }
 </style>
 """
 
@@ -575,11 +832,12 @@ def render():
 
     # 세션 초기화
     defaults = {
-        "match_step":        "survey",
-        "match_section_idx": 0,
-        "match_answers":     {},
-        "match_importance":  {},
-        "match_wishlist":    [],
+        "match_step":          "survey",
+        "match_section_idx":   0,
+        "match_answers":       {},
+        "match_importance":    {},
+        "match_wishlist":      [],
+        "wish_detail_dog_id":  None,   # ⑤ 위시리스트 상세 조회용
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -591,7 +849,7 @@ def render():
         unsafe_allow_html=True,
     )
 
-    # ── 사이드바: 위시리스트 (항상 노출) ──────────────────────────────────────
+    # ── 사이드바: 위시리스트 ──────────────────────────────────────────────────
     with st.sidebar:
         if st.session_state.match_wishlist:
             st.markdown("---")
@@ -604,9 +862,33 @@ def render():
                     f'</div>',
                     unsafe_allow_html=True,
                 )
+                # ⑤ 상세 보기 버튼
+                if st.button("🔍 상세 보기", key=f"detail_btn_{dog['id']}"):
+                    st.session_state.wish_detail_dog_id = dog["id"]
+                    st.session_state.match_step = "wish_detail"
+                    st.rerun()
+
             if st.button("🗑 목록 초기화", key="clear_wish"):
                 st.session_state.match_wishlist = []
+                st.session_state.wish_detail_dog_id = None
                 st.rerun()
+
+    # ════════════════════════════════════════════════════════════════════════
+    # ⑤ 위시리스트 강아지 상세 화면
+    # ════════════════════════════════════════════════════════════════════════
+    if st.session_state.match_step == "wish_detail":
+        try:
+            breeds_df, korea_df = load_data()
+        except Exception as e:
+            st.error(f"데이터 파일을 불러오지 못했습니다: {e}")
+            return
+        dog_id = st.session_state.wish_detail_dog_id
+        if dog_id:
+            render_wish_detail(dog_id, korea_df, breeds_df)
+        else:
+            st.session_state.match_step = "result"
+            st.rerun()
+        return
 
     # ════════════════════════════════════════════════════════════════════════
     # 설문 화면
@@ -617,8 +899,6 @@ def render():
 
         # 섹션 스텝 진행바
         dots = ""
-        lines = ""
-        labels = ""
         for i, sec in enumerate(SECTIONS):
             icon = "✓" if i < sec_idx else str(i + 1)
             cls  = "done" if i < sec_idx else ("current" if i == sec_idx else "future")
@@ -643,23 +923,25 @@ def render():
         st.caption(f"📋 전체 진행률: {answered}/30 문항 완료  |  현재 섹션: **{SECTIONS[sec_idx]}** ({sec_idx+1}/{total_s})")
         st.markdown("---")
 
-        # 현재 섹션 질문 렌더링
+        # 현재 섹션 질문
         for qi in SECTION_QUESTIONS[sec_idx]:
-            q = QUESTIONS[qi]
-            st.markdown('<div class="q-card">', unsafe_allow_html=True)
-            st.markdown(f'<div class="q-label">{q["label"]}</div>', unsafe_allow_html=True)
+            q    = QUESTIONS[qi]
+            prev = st.session_state.match_answers.get(q["id"])
+            opts = q["options"]
+            idx  = opts.index(prev) if prev in opts else 0
 
-            prev  = st.session_state.match_answers.get(q["id"])
-            opts  = q["options"]
-            idx   = opts.index(prev) if prev in opts else 0
-
+            # q-card div 안에 label을 먼저 렌더하고 radio는 Streamlit 위젯으로
+            st.markdown(
+                f'<div class="q-card"><div class="q-label">{q["label"]}</div></div>',
+                unsafe_allow_html=True,
+            )
+            # 실제 라디오 (label_visibility hidden으로 중복 방지)
             choice = st.radio(
                 label=q["label"], options=opts, index=idx,
                 key=f"q_{q['id']}", label_visibility="collapsed", horizontal=True,
             )
             st.session_state.match_answers[q["id"]] = choice
 
-            # ⭐ 중요 표시
             is_imp = st.checkbox(
                 "⭐ 이 항목이 나에게 특히 중요해요 (매칭 가중치 2배 적용)",
                 value=st.session_state.match_importance.get(q["id"], False),
@@ -667,7 +949,6 @@ def render():
             )
             st.session_state.match_importance[q["id"]] = is_imp
 
-            # flag 처리
             if q.get("flag") == "has_children":
                 st.session_state.match_answers["has_children"] = choice != "없음"
             if q.get("flag") == "allergy_sensitive":
@@ -676,13 +957,12 @@ def render():
                     1 if "심함" in choice else 2 if "약간" in choice else 3
                 )
 
-            # 가중치 수치화
             if q.get("weights") and choice in q["weights"]:
                 st.session_state.match_answers[q["id"] + "_w"] = q["weights"][choice]
             if q.get("direct"):
                 st.session_state.match_answers[q["direct"]] = choice
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom:8px'></div>", unsafe_allow_html=True)
 
         # 섹션 이동 버튼
         st.markdown("")
@@ -716,21 +996,16 @@ def render():
             st.error(f"데이터 파일을 불러오지 못했습니다: {e}")
             return
 
-        # 사이드바 필터 (결과 화면에서만 추가)
+        # 사이드바 필터
         with st.sidebar:
             st.markdown("---")
             st.markdown("### 🎛 결과 조건 재조절")
             st.caption("슬라이더 조절 시 순위가 실시간 재정렬됩니다")
-            shed_w   = st.slider("🧹 털 빠짐 민감도",        0.5, 3.0, 1.0, 0.5,
-                                 help="높을수록 털 빠짐 적은 품종 상위 노출")
-            bark_w   = st.slider("🔇 층간소음 민감도",        0.5, 3.0, 1.0, 0.5,
-                                 help="높을수록 짖음 적은 품종 상위 노출")
-            energy_w = st.slider("⚡ 에너지 레벨 중요도",     0.5, 3.0, 1.0, 0.5,
-                                 help="높을수록 산책·활동 매칭 엄격 적용")
-            social_w = st.slider("👶 아이/타견 친화력 중요도", 0.5, 3.0, 1.0, 0.5,
-                                 help="어린아이·다견 가정에 중요")
-            train_w  = st.slider("🎓 훈련 난이도 중요도",      0.5, 3.0, 1.0, 0.5,
-                                 help="높을수록 훈련 쉬운 품종 선호")
+            shed_w   = st.slider("🧹 털 빠짐 민감도",         0.5, 3.0, 1.0, 0.5)
+            bark_w   = st.slider("🔇 층간소음 민감도",         0.5, 3.0, 1.0, 0.5)
+            energy_w = st.slider("⚡ 에너지 레벨 중요도",      0.5, 3.0, 1.0, 0.5)
+            social_w = st.slider("👶 아이/타견 친화력 중요도",  0.5, 3.0, 1.0, 0.5)
+            train_w  = st.slider("🎓 훈련 난이도 중요도",       0.5, 3.0, 1.0, 0.5)
 
         # 답변 수치 변환
         a  = st.session_state.match_answers
@@ -741,23 +1016,23 @@ def render():
             return a.get(k + "_w", default)
 
         numeric = {
-            "housing_type":       _w("housing_type",      2),
-            "walk_time":          _w("walk_time",          2),
-            "activity_pref":      _w("activity_pref",      2),
-            "experience":         _w("experience",         2),
-            "training":           _w("training",           2),
-            "noise_tolerance":    _w("noise_tolerance",    3),
-            "shed_tolerance":     _w("shed_tolerance",     3),
-            "grooming":           _w("grooming",           2),
-            "allergy_num":         a.get("allergy_num",    3),
-            "energy_pref":        _w("energy_pref",        2),
-            "stranger_friendly":  _w("stranger_friendly",  3),
-            "dog_friendly":       _w("dog_friendly",       2),
-            "has_children":        a.get("has_children",   False),
-            "allergy_sensitive":   a.get("allergy_sensitive", False),
-            "gender_pref":         a.get("gender_pref",   "상관없음"),
-            "age_pref":            a.get("age_pref",      "상관없음"),
-            "region_pref":         a.get("region_pref",   "상관없음"),
+            "housing_type":      _w("housing_type",      2),
+            "walk_time":         _w("walk_time",          2),
+            "activity_pref":     _w("activity_pref",      2),
+            "experience":        _w("experience",         2),
+            "training":          _w("training",           2),
+            "noise_tolerance":   _w("noise_tolerance",    3),
+            "shed_tolerance":    _w("shed_tolerance",     3),
+            "grooming":          _w("grooming",           2),
+            "allergy_num":        a.get("allergy_num",    3),
+            "energy_pref":       _w("energy_pref",        2),
+            "stranger_friendly": _w("stranger_friendly",  3),
+            "dog_friendly":      _w("dog_friendly",       2),
+            "has_children":       a.get("has_children",   False),
+            "allergy_sensitive":  a.get("allergy_sensitive", False),
+            "gender_pref":        a.get("gender_pref",   "상관없음"),
+            "age_pref":           a.get("age_pref",      "상관없음"),
+            "region_pref":        a.get("region_pref",   "상관없음"),
         }
 
         top_breeds = match_breeds(
@@ -765,7 +1040,7 @@ def render():
             shed_w, bark_w, energy_w, social_w, train_w, top_n=5
         )
 
-        # 상단 정보
+        # 상단 버튼
         col_a, col_b = st.columns([1, 2])
         with col_a:
             if st.button("← 설문 다시 하기"):
@@ -779,7 +1054,6 @@ def render():
             imp_count = sum(1 for v in st.session_state.match_importance.values() if v)
             st.caption(f"📋 {answered}/30 문항 완료  |  ⭐ {imp_count}개 중요 항목 반영")
 
-        # 미완료 섹션 안내
         incomplete = [SECTIONS[i] for i in range(len(SECTIONS))
                       if i > st.session_state.match_section_idx]
         if incomplete:
@@ -797,28 +1071,11 @@ def render():
 
                 col_img, col_info = st.columns([1, 2])
 
-                # 품종 이미지 (korea csv에서 랜덤)
+                # 품종 이미지 — 고정 높이 (수정사항 ③)
                 with col_img:
                     img_path = get_breed_image(breed_name)
-                    if img_path and os.path.exists(img_path):
-                        st.image(img_path, use_container_width=True, caption=breed_name)
-                    else:
-                        EMOJI_MAP = {
-                            "래브라도 리트리버": "🦮", "골든 리트리버": "🦮",
-                            "말티즈": "🐩",            "포메라니안": "🐕",
-                            "시츄": "🐶",               "푸들": "🐩",
-                            "비글": "🐕‍🦺",            "치와와": "🐕",
-                            "코기": "🐕‍🦺",            "저먼 셰퍼드": "🐺",
-                        }
-                        emo = EMOJI_MAP.get(breed_name, "🐾")
-                        st.markdown(
-                            f'<div style="font-size:80px;text-align:center;'
-                            f'background:#FDE8E4;border-radius:14px;padding:24px">'
-                            f'{emo}</div>',
-                            unsafe_allow_html=True,
-                        )
+                    render_fixed_image(img_path, height_px=220)
 
-                # 품종 정보
                 with col_info:
                     st.markdown(f'<div class="result-breed">{breed_name}</div>', unsafe_allow_html=True)
                     st.markdown(f'<div class="result-score-badge">{score}% 일치!</div>', unsafe_allow_html=True)
@@ -829,7 +1086,7 @@ def render():
                         unsafe_allow_html=True,
                     )
 
-                    # 자동 컬러 태그
+                    # 컬러 태그
                     tags = make_tags(breed_row)
                     if tags:
                         tags_html = (
@@ -840,36 +1097,39 @@ def render():
                         )
                         st.markdown(tags_html, unsafe_allow_html=True)
 
-                    # 4격자 정보
+                    # 품종 격자
                     def fstr(k, default="?"):
                         v = breed_row.get(k, default)
                         return str(v)[:25] if v else default
 
                     st.markdown(
-                        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0">'
-                        f'<div style="background:#F5EDE8;border-radius:8px;padding:8px;font-size:12px">'
-                        f'📏 <b>크기</b><br>{fstr("크기_분류")}</div>'
-                        f'<div style="background:#F5EDE8;border-radius:8px;padding:8px;font-size:12px">'
-                        f'🏷 <b>견종 그룹</b><br>{fstr("견종_그룹")}</div>'
-                        f'<div style="background:#F5EDE8;border-radius:8px;padding:8px;font-size:12px">'
-                        f'🎨 <b>색상</b><br>{fstr("색상")}</div>'
-                        f'<div style="background:#F5EDE8;border-radius:8px;padding:8px;font-size:12px">'
-                        f'✂️ <b>털 유형</b><br>{fstr("털_유형")}</div>'
+                        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0">'
+                        f'<div class="breed-grid-cell">📏 <b>크기</b><br>{fstr("크기_분류")}</div>'
+                        f'<div class="breed-grid-cell">🏷 <b>견종 그룹</b><br>{fstr("견종_그룹")}</div>'
+                        f'<div class="breed-grid-cell">🎨 <b>색상</b><br>{fstr("색상")}</div>'
+                        f'<div class="breed-grid-cell">✂️ <b>털 유형</b><br>{fstr("털_유형")}</div>'
                         f'</div>',
                         unsafe_allow_html=True,
                     )
 
+                    # ① 입양 안내 버튼 (수정사항 ①)
+                    if st.button(f"📖 {breed_name} 입양 안내 보기",
+                                 key=f"guide_btn_{rank}", use_container_width=True):
+                        st.session_state.recommended_breed = breed_name
+                        st.session_state.page = "guide"
+                        st.rerun()
+
                 # 설명 & 기질
                 if breed_row.get("설명"):
                     st.markdown(
-                        f'<div style="font-size:13px;color:#5C4535;margin:8px 0;line-height:1.6;'
-                        f'background:#FDFAF8;border-radius:10px;padding:10px">'
+                        f'<div style="font-size:16px;color:#5C4535;margin:12px 0;line-height:1.8;'
+                        f'background:#FDFAF8;border-radius:12px;padding:14px">'
                         f'📖 {breed_row["설명"]}</div>',
                         unsafe_allow_html=True,
                     )
                 if breed_row.get("기질"):
                     st.markdown(
-                        f'<div style="font-size:12px;color:#7BAE8A;margin-bottom:8px">'
+                        f'<div style="font-size:15px;color:#7BAE8A;margin-bottom:12px">'
                         f'💡 <b>기질:</b> {breed_row["기질"]}</div>',
                         unsafe_allow_html=True,
                     )
@@ -900,78 +1160,72 @@ def render():
 
                 st.markdown("---")
 
-                # 보호견 매칭 목록
+                # ── 보호견 섹션 ────────────────────────────────────────────────
                 st.markdown(f"#### 🐾 입양 가능한 '{breed_name}' 보호견")
                 adopt_dogs = filter_korea_dogs(korea_df, breed_name, numeric, top_n=3)
                 if adopt_dogs.empty:
                     st.info("현재 이 품종의 보호견이 없어 다른 친구들을 소개합니다.")
                     adopt_dogs = korea_df.sample(min(3, len(korea_df)))
 
-                cols = st.columns(len(adopt_dogs))
-                for col, (_, dog) in zip(cols, adopt_dogs.iterrows()):
-                    with col:
+                # ② 항상 3열 고정 (수정사항 ②③)
+                adopt_list = list(adopt_dogs.iterrows())
+                cols = st.columns(3)
+
+                for col_i in range(3):
+                    with cols[col_i]:
+                        if col_i >= len(adopt_list):
+                            # 빈 칸 — 아무것도 렌더하지 않음
+                            continue
+
+                        _, dog   = adopt_list[col_i]
                         dog_id   = str(dog.get("아이디", ""))
                         img_path = get_dog_image_path(dog_id)
 
-                        with st.container():
-                            # 이미지
-                            if img_path and os.path.exists(img_path):
-                                st.image(img_path, use_container_width=True)
+                        # ③ 고정 높이 이미지
+                        render_fixed_image(img_path, height_px=180)
+
+                        try:
+                            age_m   = int(float(dog.get("나이(월)", 0)))
+                            age_str = (f"{age_m // 12}살 {age_m % 12}개월"
+                                       if age_m >= 12 else f"{age_m}개월")
+                        except Exception:
+                            age_str = "?"
+                        try:
+                            health  = int(float(dog.get("건강 상태", 3)))
+                            h_stars = "⭐" * health
+                        except Exception:
+                            h_stars = "⭐⭐⭐"
+
+                        # ④ 강아지 이름 · 정보 폰트 크기 상향
+                        st.markdown(
+                            f'<div class="dog-name-text">{dog.get("이름","?")}</div>'
+                            f'<div class="dog-info-text">'
+                            f'{dog.get("품종","?")} · {age_str}<br>'
+                            f'{dog.get("성별","?")} · {dog.get("지역","?")}<br>'
+                            f'크기: {dog.get("크기","?")} | 건강 {h_stars}'
+                            f'</div>'
+                            f'<div class="dog-desc-text">{str(dog.get("상세설명",""))[:55]}...</div>',
+                            unsafe_allow_html=True,
+                        )
+
+                        # ❤️ 위시리스트 버튼
+                        in_wish    = any(w["id"] == dog_id for w in st.session_state.match_wishlist)
+                        wish_label = "❤️ 관심 목록에 있음" if in_wish else "🤍 관심 목록 추가"
+                        if st.button(wish_label, key=f"wish_{dog_id}_{rank}",
+                                     use_container_width=True):
+                            if in_wish:
+                                st.session_state.match_wishlist = [
+                                    w for w in st.session_state.match_wishlist
+                                    if w["id"] != dog_id
+                                ]
                             else:
-                                st.markdown(
-                                    '<div style="font-size:48px;text-align:center;'
-                                    'background:#F5EDE8;border-radius:10px;padding:14px">🐾</div>',
-                                    unsafe_allow_html=True,
-                                )
-
-                            # 강아지 정보
-                            try:
-                                age_m   = int(float(dog.get("나이(월)", 0)))
-                                age_str = (f"{age_m//12}살 {age_m%12}개월"
-                                           if age_m >= 12 else f"{age_m}개월")
-                            except Exception:
-                                age_str = "?"
-                            try:
-                                health  = int(float(dog.get("건강 상태", 3)))
-                                h_stars = "⭐" * health
-                            except Exception:
-                                h_stars = "⭐⭐⭐"
-
-                            st.markdown(
-                                f'<div style="text-align:center;margin-top:8px">'
-                                f'<div style="font-weight:700;font-size:14px;color:#3D2B1F">'
-                                f'{dog.get("이름","?")}</div>'
-                                f'<div style="font-size:11px;color:#7D5A50;margin-top:2px">'
-                                f'{dog.get("품종","?")} · {age_str}</div>'
-                                f'<div style="font-size:11px;color:#7D5A50">'
-                                f'{dog.get("성별","?")} · {dog.get("지역","?")}</div>'
-                                f'<div style="font-size:11px;color:#A08070;margin-top:2px">'
-                                f'크기: {dog.get("크기","?")} | 건강 {h_stars}</div>'
-                                f'<div style="font-size:11px;color:#A08070;margin-top:4px;'
-                                f'line-height:1.5">{str(dog.get("상세설명",""))[:55]}...</div>'
-                                f'</div>',
-                                unsafe_allow_html=True,
-                            )
-
-                            # ❤️ 위시리스트 버튼
-                            in_wish = any(w["id"] == dog_id
-                                          for w in st.session_state.match_wishlist)
-                            wish_label = "❤️ 관심 목록에 있음" if in_wish else "🤍 관심 목록 추가"
-                            if st.button(wish_label, key=f"wish_{dog_id}_{rank}",
-                                         use_container_width=True):
-                                if in_wish:
-                                    st.session_state.match_wishlist = [
-                                        w for w in st.session_state.match_wishlist
-                                        if w["id"] != dog_id
-                                    ]
-                                else:
-                                    st.session_state.match_wishlist.append({
-                                        "id":     dog_id,
-                                        "name":   str(dog.get("이름", "?")),
-                                        "breed":  str(dog.get("품종", "?")),
-                                        "region": str(dog.get("지역", "?")),
-                                    })
-                                st.rerun()
+                                st.session_state.match_wishlist.append({
+                                    "id":     dog_id,
+                                    "name":   str(dog.get("이름", "?")),
+                                    "breed":  str(dog.get("품종", "?")),
+                                    "region": str(dog.get("지역", "?")),
+                                })
+                            st.rerun()
 
         # 하단 CTA
         st.markdown("---")
