@@ -49,6 +49,10 @@ def render():
     dogs_json = json.dumps(dogs, ensure_ascii=False)
     shelters_json = json.dumps(shelters, ensure_ascii=False)
 
+    # 메인 페이지 추천견 카드에서 진입한 경우 해당 강아지 id 수신 후 즉시 제거
+    selected_id = st.session_state.pop("selected_dog_id", None)
+    selected_id_json = json.dumps(selected_id)
+
     # Streamlit 서버의 static 이미지 base URL
     img_base = "app/static/dogs"
 
@@ -323,6 +327,7 @@ def render():
     const DOGS = {dogs_json};
     const SHELTERS = {shelters_json};
     const IMG_BASE = window.parent.location.origin + '/{img_base}/';
+    const SELECTED_DOG_ID = {selected_id_json};
 
     let listPage = 1;
     const PAGE_SIZE = 8;
@@ -518,6 +523,11 @@ def render():
         if (el) el.addEventListener('change', applyFilters);
       }});
       renderCards();
+
+      // 메인 페이지 추천견 카드에서 진입한 경우 해당 강아지 상세 패널 자동 열기
+      if (SELECTED_DOG_ID) {{
+        setTimeout(() => showDetail(SELECTED_DOG_ID), 150);
+      }}
     }});
     </script>
     """
