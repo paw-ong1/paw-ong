@@ -1,15 +1,5 @@
 'use strict';
 
-// XSS 방지 헬퍼 함수
-function escapeHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* 데이터                                                                        */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -36,6 +26,14 @@ const DOGS = [
   { id:20, name:'코코',   breed:'요크셔테리어', age:1, gender:'암컷', region:'서울 종로',   status:'입양완료',   size:'소형', activity:'낮음' },
 ];
 
+const BREED_DB = {
+  '골든 리트리버': { emoji:'🦮', activity:'높음', care:'매일 1시간 이상 산책 필요',   note:'털 빠짐 많음 — 정기 그루밍 필수' },
+  '말티즈':        { emoji:'🐩', activity:'보통', care:'실내 활동으로도 충분',         note:'눈물 자국 관리 필요' },
+  '포메라니안':    { emoji:'🐕', activity:'보통', care:'하루 30분 산책 권장',          note:'추위에 약함 — 보온 필수' },
+  '비숑 프리제':   { emoji:'🐶', activity:'낮음', care:'실내 위주 생활 가능',          note:'정기 미용 필수 (저알레르기)' },
+  '진돗개':        { emoji:'🦊', activity:'높음', care:'넓은 공간 & 충분한 운동',     note:'사회화 훈련이 중요' },
+};
+
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* 네비게이션                                                                    */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -57,73 +55,22 @@ const FEATURED_EMOJIS  = ['🦮', '🐩', '🐕‍🦺'];
 const FEATURED_COLORS  = ['#F2C4CE', '#C8E6C9', '#FDE8E4'];
 
 function renderFeatured() {
+  const available = DOGS.filter(d => d.status === '입양가능');
+  const featured  = available.slice(0, 3);
   const container = document.getElementById('featured-dogs');
   if (!container) return;
 
-  // FEATURED_DOGS: main_page.py(Python)가 주입하는 전역변수
-  const dogs = (typeof FEATURED_DOGS !== 'undefined') ? FEATURED_DOGS : [];
-  if (dogs.length === 0) {
-    container.innerHTML = '<p style="color:#A08070;text-align:center;">데이터를 불러오는 중...</p>';
-    return;
-  }
-
-  container.innerHTML = dogs.map((d, i) => `
+  container.innerHTML = featured.map((d, i) => `
     <div class="dog-card">
-      <div class="dog-card-img" style="background:${FEATURED_COLORS[i % 3]}">${FEATURED_EMOJIS[i % 3]}</div>
+      <div class="dog-card-img" style="background:${FEATURED_COLORS[i]}">${FEATURED_EMOJIS[i]}</div>
       <div class="dog-card-body">
-        <div class="dog-card-name">${escapeHtml(d['이름'])}</div>
-        <div class="dog-card-info">${escapeHtml(d['품종'])} · ${escapeHtml(d['나이'])} · ${escapeHtml(d['성별'])}</div>
-        <div class="dog-card-region">📍 ${escapeHtml(d['지역'])}</div>
+        <div class="dog-card-name">${d.name}</div>
+        <div class="dog-card-info">${d.breed} · ${d.age}살 · ${d.gender}</div>
+        <div class="dog-card-region">📍 ${d.region}</div>
         <button class="dog-card-btn" onclick="navigate('list')">입양 신청 →</button>
       </div>
     </div>
   `).join('');
-}
-
-function renderStats() {
-  const container = document.getElementById('stats-row');
-  if (!container) return;
-
-  // STATS: main_page.py(Python)가 주입하는 전역변수
-  const s = (typeof STATS !== 'undefined') ? STATS : null;
-  if (!s) {
-    container.innerHTML = '<p style="color:#A08070;text-align:center;">통계 데이터를 불러오는 중...</p>';
-    return;
-  }
-
-  container.innerHTML = `
-    <div class="stat-card">
-      <div class="stat-icon">🐾</div>
-      <div class="stat-num">${(s.total ?? 0).toLocaleString()}</div>
-      <div class="stat-label">총 등록견</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">📍</div>
-      <div class="stat-num">${s.regions}</div>
-      <div class="stat-label">보호 지역</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon">🐕</div>
-      <div class="stat-num">${s.breeds}</div>
-      <div class="stat-label">품종 수</div>
-    </div>
-  `;
-}
-
-function renderRegions() {
-  const container = document.getElementById('region-badges');
-  if (!container) return;
-
-  // REGIONS: main_page.py(Python)가 주입하는 전역변수
-  const regions = (typeof REGIONS !== 'undefined') ? REGIONS : [];
-  if (regions.length === 0) {
-    container.innerHTML = '<p style="color:#A08070;text-align:center;">지역 데이터를 불러오는 중...</p>';
-    return;
-  }
-
-  container.innerHTML = regions
-    .map(r => `<div class="region-badge">${escapeHtml(r.region)} <span>${r.count}마리</span></div>`)
-    .join('');
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -284,11 +231,29 @@ function updateWalkLabel(val) {
   if (el) el.textContent = `${val}시간`;
 }
 
-function goToMatching() {
-  // URL 쿼리 파라미터 변경 → Streamlit 재실행 → app.py가 ?page=matching 감지
-  const url = new URL(window.top.location.href);
-  url.searchParams.set('page', 'matching');
-  window.top.location.href = url.toString();
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* PAGE 4 — 품종 가이드 & FAQ                                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+function updateBreedGuide(breedName) {
+  const info = BREED_DB[breedName];
+  if (!info) return;
+  document.getElementById('breed-emoji').textContent = info.emoji;
+  document.getElementById('breed-name-display').textContent = breedName;
+  document.getElementById('breed-activity').textContent = info.activity;
+  document.getElementById('breed-care').textContent = info.care;
+  document.getElementById('breed-note').textContent = info.note;
+}
+
+function toggleFAQ(btn) {
+  const isOpen = btn.classList.contains('open');
+  // 모두 닫기
+  document.querySelectorAll('.faq-q').forEach(q => q.classList.remove('open'));
+  document.querySelectorAll('.faq-a').forEach(a => a.classList.remove('open'));
+  // 클릭된 것만 열기 (토글)
+  if (!isOpen) {
+    btn.classList.add('open');
+    btn.nextElementSibling.classList.add('open');
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -302,8 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Page 1
   renderFeatured();
-  renderStats();
-  renderRegions();
 
   // Page 2 필터
   ['search-input', 'filter-status', 'filter-size', 'filter-act'].forEach(id => {
@@ -311,4 +274,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.addEventListener('input', applyFilters);
   });
   renderTable();
+
+  // Page 4 품종 선택
+  const breedSel = document.getElementById('breed-select');
+  if (breedSel) {
+    breedSel.addEventListener('change', () => updateBreedGuide(breedSel.value));
+    updateBreedGuide(breedSel.value);
+  }
 });

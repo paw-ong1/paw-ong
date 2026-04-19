@@ -8,9 +8,14 @@ with open("css/style.css", "r", encoding="utf-8") as f:
 
 # 세션 초기화 — URL 쿼리 파라미터 우선 적용
 if "page" not in st.session_state:
-    _valid = {"main", "dog_list", "matching", "guide", "story"}
-    _qp = st.query_params.get("page", "main")
-    st.session_state.page = _qp if _qp in _valid else "main"
+    current_url_page = st.query_params.get("page", "main")
+    
+    # 유효한 페이지 이름인지 확인 후 세션에 저장
+    valid_pages = ["main", "dog_list", "matching", "guide", "story"]
+    if current_url_page in valid_pages:
+        st.session_state.page = current_url_page
+    else:
+        st.session_state.page = "main"
 
 # 사이드바
 with st.sidebar:
@@ -31,6 +36,7 @@ with st.sidebar:
     for key, label in pages.items():
         if st.button(label, key=f"nav_{key}", use_container_width=True):
             st.session_state.page = key
+            st.query_params["page"] = key
             st.rerun()
             
     # 현재 선택된 페이지의 key

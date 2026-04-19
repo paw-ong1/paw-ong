@@ -5,17 +5,7 @@ import random
 import requests
 from pathlib import Path
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 데이터 로드
-# ══════════════════════════════════════════════════════════════════════════════
-@st.cache_data
-def load_data():
-    base      = Path(__file__).parent.parent
-    breeds_df = pd.read_csv(base / "data" / "dog_breeds.csv",           encoding="utf-8-sig")
-    korea_df  = pd.read_csv(base / "data" / "korea_dog_list_fixed.csv", encoding="utf-8-sig")
-    return breeds_df, korea_df
-
+from utils.data_loader import load_data
 
 @st.cache_data
 def build_breed_image_map():
@@ -823,6 +813,175 @@ section[data-testid="stAppViewContainer"] {
 </style>
 """
 
+def render_top_breeds(top_breeds, a, korea_df, numeric):
+    st.markdown("---")
+    st.markdown("### 🎯 추천 품종 Top 5")
+    st.caption("사이드바 슬라이더로 조건을 바꾸면 순위가 실시간 재정렬됩니다 🩷")
+
+    for rank, (breed_row, score) in enumerate(top_breeds, 1):
+        breed_name = str(breed_row.get("품종명", "알 수 없음"))
+        rank_icon  = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][rank - 1]
+
+        with st.expander(f"{rank_icon} {breed_name} — {score}% 일치", expanded=(rank == 1)):
+
+            col_img, col_info = st.columns([1, 2])
+
+            # 품종 이미지 — 고정 높이 (수정사항 ③)
+            with col_img:
+                img_path = get_breed_image(breed_name)
+                render_fixed_image(img_path, height_px=220)
+
+            with col_info:
+                st.markdown(f'<div class="result-breed">{breed_name}</div>', unsafe_allow_html=True)
+                st.markdown(f'<div class="result-score-badge">{score}% 일치!</div>', unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="score-bar-track">'
+                    f'<div class="score-bar-fill" style="width:{score}%"></div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+                # 컬러 태그
+                tags = make_tags(breed_row)
+                if tags:
+                    tags_html = (
+                        '<div class="tag-row">'
+                        + "".join(f'<span class="ctag" style="{sty}">{name}</span>'
+                                  for name, sty in tags)
+                        + '</div>'
+                    )
+                    st.markdown(tags_html, unsafe_allow_html=True)
+
+                # 품종 격자
+                def fstr(k, default="?"):
+                    v = breed_row.get(k, default)
+                    return str(v)[:25] if v else default
+
+                st.markdown(
+                    f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0">'
+                    f'<div class="breed-grid-cell">📏 <b>크기</b><br>{fstr("크기_분류")}</div>'
+                    f'<div class="breed-grid-cell">🏷 <b>견종 그룹</b><br>{fstr("견종_그룹")}</div>'
+                    f'<div class="breed-grid-cell">🎨 <b>색상</b><br>{fstr("색상")}</div>'
+                    f'<div class="breed-grid-cell">✂️ <b>털 유형</b><br>{fstr("털_유형")}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True,
+                )
+
+                # ① 입양 안내 버튼 (수정사항 ①)
+                if st.button(f"📖 {breed_name} 입양 안내 보기",
+                             key=f"guide_btn_{rank}", use_container_width=True):
+                    st.session_state.recommended_breed = breed_name
+                    st.session_state.page = "guide"
+                    st.rerun()
+
+            # 설명 & 기질
+            if breed_row.get("설명"):
+                st.markdown(
+                    f'<div style="font-size:16px;color:#5C4535;margin:12px 0;line-height:1.8;'
+                    f'background:#FDFAF8;border-radius:12px;padding:14px">'
+                    f'📖 {breed_row["설명"]}</div>',
+                    unsafe_allow_html=True,
+                )
+            if breed_row.get("기질"):
+                st.markdown(
+                    f'<div style="font-size:15px;color:#7BAE8A;margin-bottom:12px">'
+                    f'💡 <b>기질:</b> {breed_row["기질"]}</div>',
+                    unsafe_allow_html=True,
+                )
+
+            # AI 추천 이유
+            ai_key = f"ai_reason_{rank}"
+            if rank == 1:
+                if ai_key not in st.session_state:
+                    with st.spinner("🤖 AI가 매칭 이유를 분석 중..."):
+                        st.session_state[ai_key] = get_ai_reason(
+                            breed_name, score, a, st.session_state.match_importance, breed_row)
+                st.markdown(
+                    f'<div class="ai-box"><div class="ai-label">🤖 AI 추천 이유</div>'
+                    f'{st.session_state[ai_key]}</div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                if st.button(f"🤖 AI 추천 이유 보기", key=f"ai_btn_{rank}"):
+                    with st.spinner("분석 중..."):
+                        st.session_state[ai_key] = get_ai_reason(
+                            breed_name, score, a, st.session_state.match_importance, breed_row)
+                if ai_key in st.session_state:
+                    st.markdown(
+                        f'<div class="ai-box"><div class="ai-label">🤖 AI 추천 이유</div>'
+                        f'{st.session_state[ai_key]}</div>',
+                        unsafe_allow_html=True,
+                    )
+
+            st.markdown("---")
+
+            # ── 보호견 섹션 ────────────────────────────────────────────────
+            st.markdown(f"#### 🐾 입양 가능한 '{breed_name}' 보호견")
+            adopt_dogs = filter_korea_dogs(korea_df, breed_name, numeric, top_n=3)
+            if adopt_dogs.empty:
+                st.info("현재 이 품종의 보호견이 없어 다른 친구들을 소개합니다.")
+                adopt_dogs = korea_df.sample(min(3, len(korea_df)))
+
+            # ② 항상 3열 고정 (수정사항 ②③)
+            adopt_list = list(adopt_dogs.iterrows())
+            cols = st.columns(3)
+
+            for col_i in range(3):
+                with cols[col_i]:
+                    if col_i >= len(adopt_list):
+                        # 빈 칸 — 아무것도 렌더하지 않음
+                        continue
+
+                    _, dog   = adopt_list[col_i]
+                    dog_id   = str(dog.get("아이디", ""))
+                    img_path = get_dog_image_path(dog_id)
+
+                    # ③ 고정 높이 이미지
+                    render_fixed_image(img_path, height_px=180)
+
+                    try:
+                        age_m   = int(float(dog.get("나이(월)", 0)))
+                        age_str = (f"{age_m // 12}살 {age_m % 12}개월"
+                                   if age_m >= 12 else f"{age_m}개월")
+                    except Exception:
+                        age_str = "?"
+                    try:
+                        health  = int(float(dog.get("건강 상태", 3)))
+                        h_stars = "⭐" * health
+                    except Exception:
+                        h_stars = "⭐⭐⭐"
+
+                    # ④ 강아지 이름 · 정보 폰트 크기 상향
+                    st.markdown(
+                        f'<div class="dog-name-text">{dog.get("이름","?")}</div>'
+                        f'<div class="dog-info-text">'
+                        f'{dog.get("품종","?")} · {age_str}<br>'
+                        f'{dog.get("성별","?")} · {dog.get("지역","?")}<br>'
+                        f'크기: {dog.get("크기","?")} | 건강 {h_stars}'
+                        f'</div>'
+                        f'<div class="dog-desc-text">{str(dog.get("상세설명",""))[:55]}...</div>',
+                        unsafe_allow_html=True,
+                    )
+
+                    # ❤️ 위시리스트 버튼
+                    in_wish    = any(w["id"] == dog_id for w in st.session_state.match_wishlist)
+                    wish_label = "❤️ 관심 목록에 있음" if in_wish else "🤍 관심 목록 추가"
+                    if st.button(wish_label, key=f"wish_{dog_id}_{rank}",
+                                 use_container_width=True):
+                        if in_wish:
+                            st.session_state.match_wishlist = [
+                                w for w in st.session_state.match_wishlist
+                                if w["id"] != dog_id
+                            ]
+                        else:
+                            st.session_state.match_wishlist.append({
+                                "id":     dog_id,
+                                "name":   str(dog.get("이름", "?")),
+                                "breed":  str(dog.get("품종", "?")),
+                                "region": str(dog.get("지역", "?")),
+                            })
+                        st.rerun()
+
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 메인 render
@@ -1039,6 +1198,7 @@ def render():
             breeds_df, numeric, importance_mul,
             shed_w, bark_w, energy_w, social_w, train_w, top_n=5
         )
+        st.session_state.top_breeds_result = top_breeds
 
         # 상단 버튼
         col_a, col_b = st.columns([1, 2])
@@ -1058,174 +1218,11 @@ def render():
                       if i > st.session_state.match_section_idx]
         if incomplete:
             st.info(f"💡 아직 답변하지 않은 섹션: **{', '.join(incomplete)}** — 완료하면 더 정확해집니다!")
-
-        st.markdown("---")
-        st.markdown("### 🎯 추천 품종 Top 5")
-        st.caption("사이드바 슬라이더로 조건을 바꾸면 순위가 실시간 재정렬됩니다 🩷")
-
-        for rank, (breed_row, score) in enumerate(top_breeds, 1):
-            breed_name = str(breed_row.get("품종명", "알 수 없음"))
-            rank_icon  = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][rank - 1]
-
-            with st.expander(f"{rank_icon} {breed_name} — {score}% 일치", expanded=(rank == 1)):
-
-                col_img, col_info = st.columns([1, 2])
-
-                # 품종 이미지 — 고정 높이 (수정사항 ③)
-                with col_img:
-                    img_path = get_breed_image(breed_name)
-                    render_fixed_image(img_path, height_px=220)
-
-                with col_info:
-                    st.markdown(f'<div class="result-breed">{breed_name}</div>', unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-score-badge">{score}% 일치!</div>', unsafe_allow_html=True)
-                    st.markdown(
-                        f'<div class="score-bar-track">'
-                        f'<div class="score-bar-fill" style="width:{score}%"></div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    # 컬러 태그
-                    tags = make_tags(breed_row)
-                    if tags:
-                        tags_html = (
-                            '<div class="tag-row">'
-                            + "".join(f'<span class="ctag" style="{sty}">{name}</span>'
-                                      for name, sty in tags)
-                            + '</div>'
-                        )
-                        st.markdown(tags_html, unsafe_allow_html=True)
-
-                    # 품종 격자
-                    def fstr(k, default="?"):
-                        v = breed_row.get(k, default)
-                        return str(v)[:25] if v else default
-
-                    st.markdown(
-                        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0">'
-                        f'<div class="breed-grid-cell">📏 <b>크기</b><br>{fstr("크기_분류")}</div>'
-                        f'<div class="breed-grid-cell">🏷 <b>견종 그룹</b><br>{fstr("견종_그룹")}</div>'
-                        f'<div class="breed-grid-cell">🎨 <b>색상</b><br>{fstr("색상")}</div>'
-                        f'<div class="breed-grid-cell">✂️ <b>털 유형</b><br>{fstr("털_유형")}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                    # ① 입양 안내 버튼 (수정사항 ①)
-                    if st.button(f"📖 {breed_name} 입양 안내 보기",
-                                 key=f"guide_btn_{rank}", use_container_width=True):
-                        st.session_state.recommended_breed = breed_name
-                        st.session_state.page = "guide"
-                        st.rerun()
-
-                # 설명 & 기질
-                if breed_row.get("설명"):
-                    st.markdown(
-                        f'<div style="font-size:16px;color:#5C4535;margin:12px 0;line-height:1.8;'
-                        f'background:#FDFAF8;border-radius:12px;padding:14px">'
-                        f'📖 {breed_row["설명"]}</div>',
-                        unsafe_allow_html=True,
-                    )
-                if breed_row.get("기질"):
-                    st.markdown(
-                        f'<div style="font-size:15px;color:#7BAE8A;margin-bottom:12px">'
-                        f'💡 <b>기질:</b> {breed_row["기질"]}</div>',
-                        unsafe_allow_html=True,
-                    )
-
-                # AI 추천 이유
-                ai_key = f"ai_reason_{rank}"
-                if rank == 1:
-                    if ai_key not in st.session_state:
-                        with st.spinner("🤖 AI가 매칭 이유를 분석 중..."):
-                            st.session_state[ai_key] = get_ai_reason(
-                                breed_name, score, a, st.session_state.match_importance, breed_row)
-                    st.markdown(
-                        f'<div class="ai-box"><div class="ai-label">🤖 AI 추천 이유</div>'
-                        f'{st.session_state[ai_key]}</div>',
-                        unsafe_allow_html=True,
-                    )
-                else:
-                    if st.button(f"🤖 AI 추천 이유 보기", key=f"ai_btn_{rank}"):
-                        with st.spinner("분석 중..."):
-                            st.session_state[ai_key] = get_ai_reason(
-                                breed_name, score, a, st.session_state.match_importance, breed_row)
-                    if ai_key in st.session_state:
-                        st.markdown(
-                            f'<div class="ai-box"><div class="ai-label">🤖 AI 추천 이유</div>'
-                            f'{st.session_state[ai_key]}</div>',
-                            unsafe_allow_html=True,
-                        )
-
-                st.markdown("---")
-
-                # ── 보호견 섹션 ────────────────────────────────────────────────
-                st.markdown(f"#### 🐾 입양 가능한 '{breed_name}' 보호견")
-                adopt_dogs = filter_korea_dogs(korea_df, breed_name, numeric, top_n=3)
-                if adopt_dogs.empty:
-                    st.info("현재 이 품종의 보호견이 없어 다른 친구들을 소개합니다.")
-                    adopt_dogs = korea_df.sample(min(3, len(korea_df)))
-
-                # ② 항상 3열 고정 (수정사항 ②③)
-                adopt_list = list(adopt_dogs.iterrows())
-                cols = st.columns(3)
-
-                for col_i in range(3):
-                    with cols[col_i]:
-                        if col_i >= len(adopt_list):
-                            # 빈 칸 — 아무것도 렌더하지 않음
-                            continue
-
-                        _, dog   = adopt_list[col_i]
-                        dog_id   = str(dog.get("아이디", ""))
-                        img_path = get_dog_image_path(dog_id)
-
-                        # ③ 고정 높이 이미지
-                        render_fixed_image(img_path, height_px=180)
-
-                        try:
-                            age_m   = int(float(dog.get("나이(월)", 0)))
-                            age_str = (f"{age_m // 12}살 {age_m % 12}개월"
-                                       if age_m >= 12 else f"{age_m}개월")
-                        except Exception:
-                            age_str = "?"
-                        try:
-                            health  = int(float(dog.get("건강 상태", 3)))
-                            h_stars = "⭐" * health
-                        except Exception:
-                            h_stars = "⭐⭐⭐"
-
-                        # ④ 강아지 이름 · 정보 폰트 크기 상향
-                        st.markdown(
-                            f'<div class="dog-name-text">{dog.get("이름","?")}</div>'
-                            f'<div class="dog-info-text">'
-                            f'{dog.get("품종","?")} · {age_str}<br>'
-                            f'{dog.get("성별","?")} · {dog.get("지역","?")}<br>'
-                            f'크기: {dog.get("크기","?")} | 건강 {h_stars}'
-                            f'</div>'
-                            f'<div class="dog-desc-text">{str(dog.get("상세설명",""))[:55]}...</div>',
-                            unsafe_allow_html=True,
-                        )
-
-                        # ❤️ 위시리스트 버튼
-                        in_wish    = any(w["id"] == dog_id for w in st.session_state.match_wishlist)
-                        wish_label = "❤️ 관심 목록에 있음" if in_wish else "🤍 관심 목록 추가"
-                        if st.button(wish_label, key=f"wish_{dog_id}_{rank}",
-                                     use_container_width=True):
-                            if in_wish:
-                                st.session_state.match_wishlist = [
-                                    w for w in st.session_state.match_wishlist
-                                    if w["id"] != dog_id
-                                ]
-                            else:
-                                st.session_state.match_wishlist.append({
-                                    "id":     dog_id,
-                                    "name":   str(dog.get("이름", "?")),
-                                    "breed":  str(dog.get("품종", "?")),
-                                    "region": str(dog.get("지역", "?")),
-                                })
-                            st.rerun()
+                            
+        if "top_breeds_result" in st.session_state:
+            top_breeds = st.session_state.top_breeds_result
+            # 추천 품종 Top 5
+            render_top_breeds(top_breeds, a, korea_df, numeric)
 
         # 하단 CTA
         st.markdown("---")
