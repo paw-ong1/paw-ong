@@ -717,13 +717,6 @@ div[data-testid="stMarkdownContainer"]:has(> .tl-step) {
 }
 
 /* FAQ */
-[data-testid="stElementContainer"]:has(> .stMarkdown > [data-testid="stMarkdownContainer"] > .check-list) {
-  display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: 20px;
-  margin-top: 24px;
-  align-items: start;
-}
 .stExpander { margin-bottom: 8px !important; }
 .stExpander summary {
   display: flex !important;
