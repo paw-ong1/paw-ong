@@ -1,5 +1,15 @@
 'use strict';
 
+// XSS 방지 헬퍼 함수
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* 데이터                                                                        */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -55,22 +65,73 @@ const FEATURED_EMOJIS  = ['🦮', '🐩', '🐕‍🦺'];
 const FEATURED_COLORS  = ['#F2C4CE', '#C8E6C9', '#FDE8E4'];
 
 function renderFeatured() {
-  const available = DOGS.filter(d => d.status === '입양가능');
-  const featured  = available.slice(0, 3);
   const container = document.getElementById('featured-dogs');
   if (!container) return;
 
-  container.innerHTML = featured.map((d, i) => `
+  // FEATURED_DOGS: main_page.py(Python)가 주입하는 전역변수
+  const dogs = (typeof FEATURED_DOGS !== 'undefined') ? FEATURED_DOGS : [];
+  if (dogs.length === 0) {
+    container.innerHTML = '<p style="color:#A08070;text-align:center;">데이터를 불러오는 중...</p>';
+    return;
+  }
+
+  container.innerHTML = dogs.map((d, i) => `
     <div class="dog-card">
-      <div class="dog-card-img" style="background:${FEATURED_COLORS[i]}">${FEATURED_EMOJIS[i]}</div>
+      <div class="dog-card-img" style="background:${FEATURED_COLORS[i % 3]}">${FEATURED_EMOJIS[i % 3]}</div>
       <div class="dog-card-body">
-        <div class="dog-card-name">${d.name}</div>
-        <div class="dog-card-info">${d.breed} · ${d.age}살 · ${d.gender}</div>
-        <div class="dog-card-region">📍 ${d.region}</div>
+        <div class="dog-card-name">${escapeHtml(d['이름'])}</div>
+        <div class="dog-card-info">${escapeHtml(d['품종'])} · ${escapeHtml(d['나이'])} · ${escapeHtml(d['성별'])}</div>
+        <div class="dog-card-region">📍 ${escapeHtml(d['지역'])}</div>
         <button class="dog-card-btn" onclick="navigate('list')">입양 신청 →</button>
       </div>
     </div>
   `).join('');
+}
+
+function renderStats() {
+  const container = document.getElementById('stats-row');
+  if (!container) return;
+
+  // STATS: main_page.py(Python)가 주입하는 전역변수
+  const s = (typeof STATS !== 'undefined') ? STATS : null;
+  if (!s) {
+    container.innerHTML = '<p style="color:#A08070;text-align:center;">통계 데이터를 불러오는 중...</p>';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon">🐾</div>
+      <div class="stat-num">${(s.total ?? 0).toLocaleString()}</div>
+      <div class="stat-label">총 등록견</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📍</div>
+      <div class="stat-num">${s.regions}</div>
+      <div class="stat-label">보호 지역</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🐕</div>
+      <div class="stat-num">${s.breeds}</div>
+      <div class="stat-label">품종 수</div>
+    </div>
+  `;
+}
+
+function renderRegions() {
+  const container = document.getElementById('region-badges');
+  if (!container) return;
+
+  // REGIONS: main_page.py(Python)가 주입하는 전역변수
+  const regions = (typeof REGIONS !== 'undefined') ? REGIONS : [];
+  if (regions.length === 0) {
+    container.innerHTML = '<p style="color:#A08070;text-align:center;">지역 데이터를 불러오는 중...</p>';
+    return;
+  }
+
+  container.innerHTML = regions
+    .map(r => `<div class="region-badge">${escapeHtml(r.region)} <span>${r.count}마리</span></div>`)
+    .join('');
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -231,6 +292,13 @@ function updateWalkLabel(val) {
   if (el) el.textContent = `${val}시간`;
 }
 
+function goToMatching() {
+  // URL 쿼리 파라미터 변경 → Streamlit 재실행 → app.py가 ?page=matching 감지
+  const url = new URL(window.top.location.href);
+  url.searchParams.set('page', 'matching');
+  window.top.location.href = url.toString();
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* PAGE 4 — 품종 가이드 & FAQ                                                   */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -267,6 +335,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Page 1
   renderFeatured();
+  renderStats();
+  renderRegions();
 
   // Page 2 필터
   ['search-input', 'filter-status', 'filter-size', 'filter-act'].forEach(id => {
