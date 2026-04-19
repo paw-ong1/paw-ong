@@ -1,17 +1,44 @@
+import json
+import streamlit as st
 import streamlit.components.v1 as components
 from utils.file_loader import load_resource
+from utils.data_loader import get_featured_dogs, get_stats, get_region_stats
+
+# 추천견은 세션 단위로 고정 (매 rerun마다 재셔플 방지)
+@st.cache_data
+def _load_page_data():
+    """CSV 데이터를 로드하고 JSON 문자열로 반환한다. 앱 재시작 전까지 캐시됨."""
+    def _safe_json(obj):
+        # </script> 시퀀스가 script 태그를 조기 종료하지 않도록 이스케이프
+        return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+    return (
+        _safe_json(get_featured_dogs()),
+        _safe_json(get_stats()),
+        _safe_json(get_region_stats()),
+    )
+
 
 def render():
-    # 1. 파일 경로 정의
     css_content = load_resource("css/style.css")
-    js_content = load_resource("js/app.js")
+    js_content  = load_resource("js/app.js")
 
-    # HTML 코드 (상단에 스타일 삽입)
+    # CSV → JSON 직렬화 (Python → JS 전역변수로 주입)
+    try:
+        featured_json, stats_json, regions_json = _load_page_data()
+    except Exception as e:
+        st.error(f"데이터 로드 오류: {e}")
+        return
+
     html_code = f"""
     <style>{css_content}</style>
+    <script>
+      const FEATURED_DOGS = {featured_json};
+      const STATS         = {stats_json};
+      const REGIONS       = {regions_json};
+    </script>
     <script>{js_content}</script>
-    
-    <!-- ─── PAGE 1: 메인 ─────────────────────────────────────────────────── -->
+
+    <!-- ─── PAGE 1: 메인 ──────────────────────────────────────────────── -->
     <section id="page-main" class="page active">
       <div class="paw-bg">🐾</div>
 
@@ -23,15 +50,24 @@ def render():
         <p>매일 기다리는 소중한 생명들, 지금 만나보세요</p>
       </div>
 
+      <!-- 통계 카드 -->
+      <div class="stats-row" id="stats-row"></div>
+
       <!-- 추천견 -->
       <div class="section-header">
         <div>
           <div class="sec-title">🐶 이달의 추천견 🩷</div>
-          <div class="sec-sub">보호소에서 가장 오래 기다린 친구들을 소개합니다</div>
+          <div class="sec-sub">보호소에서 기다리는 친구들을 소개합니다</div>
         </div>
         <button class="btn-outline" onclick="navigate('list')">전체 보기 →</button>
       </div>
       <div class="dog-cards" id="featured-dogs"></div>
+
+      <!-- 지역별 현황 -->
+      <div class="region-section card">
+        <div class="sec-title">📍 지역별 현황 🌿</div>
+        <div class="region-badges" id="region-badges"></div>
+      </div>
 
       <!-- 3단계 프로세스 -->
       <div class="card step-card">
@@ -55,10 +91,9 @@ def render():
             <div class="step-desc">새 가족과의 행복한<br>시작을 응원해요 🩷</div>
           </div>
         </div>
-        <button class="btn-primary" onclick="navigate('matching')">🔍 지금 매칭 시작하기 →</button>
+        <button class="btn-primary" onclick="goToMatching()">🔍 지금 매칭 시작하기 →</button>
       </div>
     </section>
     """
 
-    # 2. Streamlit 화면에 렌더링
-    components.html(html_code, height=1000)
+    components.html(html_code, height=1200)
