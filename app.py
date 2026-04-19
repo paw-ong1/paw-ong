@@ -6,9 +6,11 @@ st.set_page_config(page_title="🐾 반려동물 입양 매칭", layout="wide")
 with open("css/style.css", "r", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# 세션 초기화
+# 세션 초기화 — URL 쿼리 파라미터 우선 적용
 if "page" not in st.session_state:
-    st.session_state.page = "main"
+    _valid = {"main", "dog_list", "matching", "guide", "story"}
+    _qp = st.query_params.get("page", "main")
+    st.session_state.page = _qp if _qp in _valid else "main"
 
 # 사이드바
 with st.sidebar:
