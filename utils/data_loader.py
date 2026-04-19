@@ -1,8 +1,16 @@
+import streamlit as st
 import pandas as pd
 import os as _os
+from pathlib import Path
 
 _CSV_PATH = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), 'data', 'korea_dog_list_fixed.csv')
 
+@st.cache_data
+def load_data():
+    base      = Path(__file__).parent.parent
+    breeds_df = pd.read_csv(base / "data" / "dog_breeds.csv",           encoding="utf-8-sig")
+    korea_df  = pd.read_csv(base / "data" / "korea_dog_list_fixed.csv", encoding="utf-8-sig")
+    return breeds_df, korea_df
 
 def load_dog_df():
     """CSV를 읽어 DataFrame으로 반환한다."""

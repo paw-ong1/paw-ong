@@ -5,17 +5,7 @@ import random
 import requests
 from pathlib import Path
 
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 데이터 로드
-# ══════════════════════════════════════════════════════════════════════════════
-@st.cache_data
-def load_data():
-    base      = Path(__file__).parent.parent
-    breeds_df = pd.read_csv(base / "data" / "dog_breeds.csv",           encoding="utf-8-sig")
-    korea_df  = pd.read_csv(base / "data" / "korea_dog_list_fixed.csv", encoding="utf-8-sig")
-    return breeds_df, korea_df
-
+from utils.data_loader import load_data
 
 @st.cache_data
 def build_breed_image_map():

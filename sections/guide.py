@@ -1,6 +1,8 @@
 import streamlit as st
-import streamlit.components.v1 as components
+
+from utils.data_loader import load_data
 from utils.file_loader import load_resource
+from utils.formatter import build_display_db
 
 BREED_DB = {
     '골든 리트리버': { 'emoji': '🦮', 'activity': '높음', 'care': '매일 1시간 이상 산책 필요', 'note': '털 빠짐 많음 — 정기 그루밍 필수' },
@@ -11,12 +13,17 @@ BREED_DB = {
 }
 
 def render():
+    
     # 1. 파일 경로 정의
     css_content = load_resource("css/style.css")
 
     # ==========================================
     # 동적 렌더링을 위한 데이터 세팅
     # ==========================================
+    
+    if "check_results" not in st.session_state:
+        # 기본값을 모두 False로 설정 (리스트 개수는 체크리스트 길이만큼)
+        st.session_state.check_results = [False] * 6
     
     # 품종 리스트
     breeds = []
@@ -76,13 +83,15 @@ def render():
             
             if breeds:
                 selected_breed = st.selectbox("품종 선택", breeds, label_visibility="collapsed")
-                # TODO 
-                info = BREED_DB[selected_breed]
+                breeds_df, _ = load_data()
+                breed_info_map = build_display_db(breeds_df)
+
+                info = breed_info_map[selected_breed]
                 
                 # HTML 카드 디자인 주입
                 st.markdown(f"""
                         <div class="breed-card">
-                          <div class="breed-emoji" id="breed-emoji">{info['emoji']}</div>
+                          <div class="breed-emoji" id="breed-emoji">🐶</div>
                           <div>
                             <div class="breed-name" id="breed-name-display">{selected_breed}</div>
                             <div class="breed-tag">추천 매칭 품종 🌿</div>
@@ -148,12 +157,14 @@ def render():
             results = []
             for i, question in enumerate(checklists):
                 # key를 고유하게 설정해야 상태가 유지됩니다.
-                is_checked = st.checkbox(question, key=f"check_{i}")
-                results.append(is_checked)  
+                is_checked = st.checkbox(question, value=st.session_state.check_results[i], key=f"check_{i}")
+                results.append(is_checked) 
+                
+            st.session_state.check_results = results 
                 
             # 모든 항목이 체크되었는지 확인하는 기능
             total = len(checklists)
-            checked_count = sum(results)
+            checked_count = sum(st.session_state.check_results)
             progress_percentage = checked_count / total
 
             st.markdown("---") # 구분선
