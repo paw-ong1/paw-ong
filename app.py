@@ -30,6 +30,22 @@ with st.sidebar:
         if st.button(label, key=f"nav_{key}", use_container_width=True):
             st.session_state.page = key
             st.rerun()
+            
+    # 현재 선택된 페이지의 key
+    active_page_key = st.session_state.page
+    st.markdown(f"""
+        <style>
+            /* 버튼 배경색과 텍스트 색상 수정 */
+            div[class*="st-key-nav_{active_page_key}"] button {{
+                background: #E8A598 !important;
+                color: white !important;
+            }}
+            /* 버튼 안의 텍스트 굵기 적용 */
+            div[class*="st-key-nav_{active_page_key}"] button p {{
+                font-weight: 700 !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
 
     st.markdown("""
     <div class="sidebar-footer">
