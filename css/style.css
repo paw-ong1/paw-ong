@@ -851,3 +851,45 @@ div[data-testid="stMarkdownContainer"]:has(> .tl-step) {
 .write-card { background: #FDE8E4; border-color: #F2C4CE; }
 .write-card-title  { font-weight: 700; font-size: 13px; color: #3D2B1F; margin-bottom: 6px; }
 .write-card-desc   { font-size: 11px; color: #8B6555; margin-bottom: 14px; }
+
+/* ── 통계 카드 ─────────────────────────────────── */
+.stats-row {
+  display: flex;
+  gap: 14px;
+  margin: 20px 0;
+}
+.stat-card {
+  flex: 1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 16px;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+.stat-card .stat-icon  { font-size: 28px; margin-bottom: 8px; }
+.stat-card .stat-num   { font-size: 26px; font-weight: 800; color: #3D2B1F; }
+.stat-card .stat-label { font-size: 12px; color: #A08070; margin-top: 4px; }
+
+/* ── 지역별 현황 ────────────────────────────────── */
+.region-section { margin: 20px 0; }
+.region-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.region-badge {
+  background: #FDE8E4;
+  color: #7D4F5A;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.region-badge span { color: #E8A598; font-weight: 700; margin-left: 4px; }
+
+/* ── 반응형 ────────────────────────────────────── */
+@media (max-width: 768px) {
+  .stats-row { flex-direction: column; gap: 12px; }
+  .region-badges { gap: 8px; }
+}

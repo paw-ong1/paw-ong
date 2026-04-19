@@ -1,61 +1,46 @@
 import json
-import pandas as pd
+import streamlit as st
 import streamlit.components.v1 as components
 from utils.file_loader import load_resource
+from utils.data_loader import load_dog_df, get_featured_dogs, get_stats, get_region_stats
 
 
-def _load_featured_dogs() -> list[dict]:
-    """CSV에서 추천견 3마리를 선별."""
-    df = pd.read_csv("data/korea_dog_list_fixed.csv", encoding="utf-8-sig")
+def _safe_json(obj):
+    """JSON 직렬화 후 </script> 시퀀스를 이스케이프한다."""
+    return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
 
-    shelters_map = {}
-    with open("data/shelter_info.json", "r", encoding="utf-8") as f:
-        shelters_map = json.load(f)
 
-    # 사회도 + 친화도가 높은 상위 3마리 선택
-    df["추천점수"] = df["사회도"].astype(int) + df["친화도"].astype(int)
-    top3 = df.nlargest(3, "추천점수").head(3)
-
-    dogs = []
-    for _, row in top3.iterrows():
-        region = str(row["지역"])
-        shelter = shelters_map.get(region, {})
-        age_month = int(row["나이(월)"])
-        age_text = f"{age_month}개월" if age_month < 12 else f"{age_month // 12}살"
-        dogs.append({
-            "name": str(row["이름"]),
-            "breed": str(row["품종"]),
-            "age": age_text,
-            "gender": str(row["성별"]),
-            "region": region,
-            "shelter_name": shelter.get("name", ""),
-        })
-    return dogs
+@st.cache_data
+def _load_static_data():
+    """통계·지역 데이터 — 결정론적이므로 캐시 적용."""
+    df = load_dog_df()
+    return _safe_json(get_stats(df=df)), _safe_json(get_region_stats(df=df))
 
 
 def render():
     css_content = load_resource("css/style.css")
+    js_content  = load_resource("js/app.js")
 
-    featured = _load_featured_dogs()
+    try:
+        stats_json, regions_json = _load_static_data()
+    except Exception as e:
+        st.error(f"데이터 로드 오류: {e}")
+        return
 
-    emojis = ["🦮", "🐩", "🐕‍🦺"]
-    colors = ["#F2C4CE", "#C8E6C9", "#FDE8E4"]
+    # 추천견 — session_state에 저장해 버튼 클릭 후 재렌더링 시에도 같은 강아지 유지
+    # (새 세션 시작 시 또는 메인 페이지 첫 진입 시에만 새로 뽑음)
+    if "main_featured_dogs" not in st.session_state:
+        st.session_state.main_featured_dogs = get_featured_dogs()
+    featured_dogs = st.session_state.main_featured_dogs
 
-    cards_html = ""
-    for i, d in enumerate(featured):
-        cards_html += f"""
-        <div class="dog-card">
-          <div class="dog-card-img" style="background:{colors[i]}">{emojis[i]}</div>
-          <div class="dog-card-body">
-            <div class="dog-card-name">{d['name']}</div>
-            <div class="dog-card-info">{d['breed']} · {d['age']} · {d['gender']}</div>
-            <div class="dog-card-region">📍 {d['region']} · {d['shelter_name']}</div>
-          </div>
-        </div>
-        """
-
-    html_code = f"""
+    # ── 상단 iframe: 히어로 + 통계 ──────────────────────────────────────────
+    top_html = f"""
     <style>{css_content}</style>
+    <script>
+      const STATS   = {stats_json};
+      const REGIONS = {regions_json};
+    </script>
+    <script>{js_content}</script>
 
     <section id="page-main" class="page active">
       <div class="paw-bg">🐾</div>
@@ -68,15 +53,78 @@ def render():
         <p>매일 기다리는 소중한 생명들, 지금 만나보세요</p>
       </div>
 
-      <!-- 추천견 -->
-      <div class="section-header">
-        <div>
-          <div class="sec-title">🐶 이달의 추천견 🩷</div>
-          <div class="sec-sub">사회성과 친화력이 가장 높은 친구들을 소개합니다</div>
-        </div>
+      <!-- 통계 카드 -->
+      <div class="stats-row" id="stats-row"></div>
+    </section>
+    """
+    components.html(top_html, height=560)
+
+    # ── 이달의 추천견 (Streamlit 네이티브 — iframe 밖) ──────────────────────
+    # iframe 밖에서 렌더링해야 st.button으로 session_state를 통한 페이지 이동이 가능
+    st.markdown("""
+    <style>
+    /* 추천견 입양 신청 버튼 스타일 */
+    div[data-testid="stButton"][class*="st-key-featured_btn"] > button {
+        background: #E8A598;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        padding: 7px 0;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'Noto Sans KR', sans-serif;
+        width: 100%;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-top: 0;
+    }
+    div[data-testid="stButton"][class*="st-key-featured_btn"] > button:hover {
+        background: #7BAE8A;
+        color: white;
+    }
+    </style>
+    <div class="section-header" style="padding: 0 4px; margin-bottom: 10px;">
+      <div>
+        <div class="sec-title">🐶 이달의 추천견 🩷</div>
+        <div class="sec-sub">보호소에서 기다리는 친구들을 소개합니다</div>
       </div>
-      <div class="dog-cards">
-        {cards_html}
+    </div>
+    """, unsafe_allow_html=True)
+
+    EMOJIS = ['🦮', '🐩', '🐕‍🦺']
+    COLORS = ['#F2C4CE', '#C8E6C9', '#FDE8E4']
+
+    cols = st.columns(3)
+    for i, (col, dog) in enumerate(zip(cols, featured_dogs)):
+        with col:
+            st.markdown(f"""
+            <div class="dog-card">
+              <div class="dog-card-img" style="background:{COLORS[i % 3]}">{EMOJIS[i % 3]}</div>
+              <div class="dog-card-body">
+                <div class="dog-card-name">{dog['이름']}</div>
+                <div class="dog-card-info">{dog['품종']} · {dog['나이']} · {dog['성별']}</div>
+                <div class="dog-card-region">📍 {dog['지역']}</div>
+              </div>
+            </div>
+            """, unsafe_allow_html=True)
+            if st.button("입양 신청 →", key=f"featured_btn_{i}", use_container_width=True):
+                st.session_state.page = "dog_list"
+                st.session_state.selected_dog_id = int(dog['id'])
+                st.rerun()
+
+    # ── 하단 iframe: 지역별 현황 + 3단계 프로세스 ──────────────────────────
+    bottom_html = f"""
+    <style>{css_content}</style>
+    <script>
+      const REGIONS = {regions_json};
+    </script>
+    <script>{js_content}</script>
+
+    <section id="page-main" class="page active">
+      <!-- 지역별 현황 -->
+      <div class="region-section card">
+        <div class="sec-title">📍 지역별 현황 🌿</div>
+        <div class="region-badges" id="region-badges"></div>
       </div>
 
       <!-- 3단계 프로세스 -->
@@ -104,5 +152,29 @@ def render():
       </div>
     </section>
     """
+    components.html(bottom_html, height=480)
 
-    components.html(html_code, height=1000)
+    # ── CTA 버튼 (iframe 밖 Streamlit 네이티브) ─────────────────────────────
+    st.markdown("""
+    <style>
+    div[data-testid="stButton"].cta-btn > button {
+        background: linear-gradient(135deg, #E8A598, #C07B6A);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 32px;
+        font-size: 16px;
+        font-weight: 700;
+        width: 100%;
+        cursor: pointer;
+    }
+    div[data-testid="stButton"].cta-btn > button:hover {
+        background: linear-gradient(135deg, #C07B6A, #A0604A);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        if st.button("🔍 지금 매칭 시작하기 →", use_container_width=True, key="cta_matching"):
+            st.session_state.page = "matching"
+            st.rerun()
