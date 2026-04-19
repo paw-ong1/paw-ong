@@ -37,17 +37,22 @@ h1, h2, h3 { font-family: 'Gowun Batang', serif; color: #3D2B1F; }
   background: #EAD5CC;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 16px;
+  gap: 12px;
+  padding: 15px 1rem 15px 1.2rem;
   flex-shrink: 0;
   margin: -1rem -1rem 1rem -1rem; /* 사이드바 기본 여백 제거 및 위치 조정 */
 }
-.logo-icon { font-size: 22px; }
+.logo-icon {
+  height: 42px;           /* 추천 수치(45px~50px) 반영 */
+  width: auto;            /* 비율 유지를 위해 너비는 자동 조절 */
+  object-fit: contain;
+}
 .logo-text {
   font-family: 'Gowun Batang', serif;
-  font-size: 15px;
+  font-size: 24px;
   font-weight: 700;
   color: #3D2B1F;
+  margin-top: 2px;
 }
 
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
