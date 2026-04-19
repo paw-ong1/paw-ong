@@ -2,20 +2,24 @@ import json
 import streamlit as st
 import streamlit.components.v1 as components
 from utils.file_loader import load_resource
-from utils.data_loader import get_featured_dogs, get_stats, get_region_stats
+from utils.data_loader import load_dog_df, get_featured_dogs, get_stats, get_region_stats
 
-# 추천견은 세션 단위로 고정 (매 rerun마다 재셔플 방지)
+
+def _safe_json(obj):
+    """JSON 직렬화 후 </script> 시퀀스를 이스케이프한다."""
+    return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+
+
 @st.cache_data
-def _load_page_data():
-    """CSV 데이터를 로드하고 JSON 문자열로 반환한다. 앱 재시작 전까지 캐시됨."""
-    def _safe_json(obj):
-        # </script> 시퀀스가 script 태그를 조기 종료하지 않도록 이스케이프
-        return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
-    return (
-        _safe_json(get_featured_dogs()),
-        _safe_json(get_stats()),
-        _safe_json(get_region_stats()),
-    )
+def _load_static_data():
+    """통계·지역 데이터 — 결정론적이므로 캐시 적용."""
+    df = load_dog_df()
+    return _safe_json(get_stats(df=df)), _safe_json(get_region_stats(df=df))
+
+
+def _load_featured_json():
+    """추천견 — 새로고침마다 랜덤 선택, 캐시 미적용."""
+    return _safe_json(get_featured_dogs())
 
 
 def render():
@@ -23,8 +27,10 @@ def render():
     js_content  = load_resource("js/app.js")
 
     # CSV → JSON 직렬화 (Python → JS 전역변수로 주입)
+    # stats/regions는 캐시, featured는 매번 랜덤 선택
     try:
-        featured_json, stats_json, regions_json = _load_page_data()
+        stats_json, regions_json = _load_static_data()
+        featured_json = _load_featured_json()
     except Exception as e:
         st.error(f"데이터 로드 오류: {e}")
         return
