@@ -97,9 +97,34 @@ def render():
             <div class="step-desc">새 가족과의 행복한<br>시작을 응원해요 🩷</div>
           </div>
         </div>
-        <button class="btn-primary" onclick="goToMatching()">🔍 지금 매칭 시작하기 →</button>
       </div>
     </section>
     """
 
-    components.html(html_code, height=1200)
+    components.html(html_code, height=1140)
+
+    # components.html()은 null-origin iframe이라 window.top 접근이 SecurityError를 발생시킴.
+    # CTA 버튼은 iframe 밖 Streamlit 네이티브 버튼으로 처리.
+    st.markdown("""
+    <style>
+    div[data-testid="stButton"].cta-btn > button {
+        background: linear-gradient(135deg, #E8A598, #C07B6A);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 32px;
+        font-size: 16px;
+        font-weight: 700;
+        width: 100%;
+        cursor: pointer;
+    }
+    div[data-testid="stButton"].cta-btn > button:hover {
+        background: linear-gradient(135deg, #C07B6A, #A0604A);
+    }
+    </style>
+    """, unsafe_allow_html=True)
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        if st.button("🔍 지금 매칭 시작하기 →", use_container_width=True, key="cta_matching"):
+            st.session_state.page = "matching"
+            st.rerun()
