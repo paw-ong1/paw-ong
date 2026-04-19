@@ -19,19 +19,10 @@ def render():
     # ==========================================
     
     # 품종 리스트
+    breeds = []
     if "top_breeds_result" in st.session_state:
       top_breeds = st.session_state.top_breeds_result
       breeds = [str(breed_row.get("품종명", "알 수 없음")) for breed_row, _ in top_breeds]
-    else:
-      breeds = ["골든 리트리버", "말티즈", "포메라니안", "비숑 프리제", "진돗개"]
-    
-    # 타임라인 데이터
-    timeline_steps = [
-        {"icon": "💬", "color": "#E8A598", "label_color": "#E8A598",  "label": "상담", "desc": "온라인/전화<br>사전 상담"},
-        {"icon": "🏠", "color": "#7BAE8A", "label_color": "#7BAE8A", "label": "방문", "desc": "보호소 직접<br>방문 & 만남"},
-        {"icon": "🤝", "color": "#F2C4CE", "label_color": "#C4748E", "label": "임시 보호", "desc": "2주간<br>적응 기간"},
-        {"icon": "🎉", "color": "#3D2B1F", "label_color": "#3D2B1F",  "label": "정식 입양", "desc": "서류 완료<br>& 입양 확정"}
-    ]
     
     # 체크리스트 데이터
     checklists = [
@@ -81,26 +72,37 @@ def render():
     with col_left:
         # --- 품종별 가이드 섹션 ---
         with st.container():
-            breeds = list(BREED_DB.keys())
             st.markdown('<div style="font-weight:700;font-size:15px;color:#3D2B1F;margin-bottom:12px;">🐕 품종별 가이드 🌿</div>', unsafe_allow_html=True)
             
-            selected_breed = st.selectbox("품종 선택", breeds, label_visibility="collapsed")
-            info = BREED_DB[selected_breed]
-            
-            # HTML 카드 디자인 주입
-            st.markdown(f"""
-                    <div class="breed-card">
-                      <div class="breed-emoji" id="breed-emoji">{info['emoji']}</div>
-                      <div>
-                        <div class="breed-name" id="breed-name-display">골든 리트리버</div>
-                        <div class="breed-tag">추천 매칭 품종 🌿</div>
-                      </div>
+            if breeds:
+                selected_breed = st.selectbox("품종 선택", breeds, label_visibility="collapsed")
+                # TODO 
+                info = BREED_DB[selected_breed]
+                
+                # HTML 카드 디자인 주입
+                st.markdown(f"""
+                        <div class="breed-card">
+                          <div class="breed-emoji" id="breed-emoji">{info['emoji']}</div>
+                          <div>
+                            <div class="breed-name" id="breed-name-display">{selected_breed}</div>
+                            <div class="breed-tag">추천 매칭 품종 🌿</div>
+                          </div>
+                        </div>
+                        <div class="card-light">🧬 <strong>활동성</strong> — {info['activity']}</div>
+                        <div class="card-light">😊 <strong>케어 방법</strong> — {info['care']}</div>
+                        <div class="card-light">⚠️ <strong>주의사항</strong> — {info['note']}</div>
                     </div>
-                    <div class="card-light">🧬 <strong>활동성</strong> — {info['activity']}</div>
-                    <div class="card-light">😊 <strong>케어 방법</strong> — {info['care']}</div>
-                    <div class="card-light">⚠️ <strong>주의사항</strong> — {info['note']}</div>
-                </div>
-            """, unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
+            else:
+                # HTML 카드 디자인 주입
+                st.markdown(f"""
+                        <div class="breed-card">
+                          <div>
+                            <div class="breed-tag">현재 매칭된 품종 데이터가 없습니다. 🐾</div>
+                          </div>
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
 
         st.write("") # 간격 조절
 
