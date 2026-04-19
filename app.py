@@ -1,4 +1,5 @@
 import streamlit as st
+import base64
 
 st.set_page_config(page_title="🐾 반려동물 입양 매칭", layout="wide")
 
@@ -17,12 +18,19 @@ if "page" not in st.session_state:
     else:
         st.session_state.page = "main"
 
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# 이미지 경로 설정 (실제 경로 확인 필수)
+img_base64 = get_base64_image("assets/images/logo/paw_ong_logo_brown.png")
+
 # 사이드바
 with st.sidebar:
-    st.markdown("""
+    st.markdown(f"""
     <div class="logo-area">
-      <span class="logo-icon">🐾</span>
-      <span class="logo-text">반려동물 입양</span>
+      <img src="data:image/png;base64,{img_base64}" class="logo-icon" alt="발바닥 아이콘">
+      <span class="logo-text">paw(포)옹</span>
     </div>
     """, unsafe_allow_html=True)
 
