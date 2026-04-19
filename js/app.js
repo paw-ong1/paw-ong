@@ -26,14 +26,6 @@ const DOGS = [
   { id:20, name:'코코',   breed:'요크셔테리어', age:1, gender:'암컷', region:'서울 종로',   status:'입양완료',   size:'소형', activity:'낮음' },
 ];
 
-const BREED_DB = {
-  '골든 리트리버': { emoji:'🦮', activity:'높음', care:'매일 1시간 이상 산책 필요',   note:'털 빠짐 많음 — 정기 그루밍 필수' },
-  '말티즈':        { emoji:'🐩', activity:'보통', care:'실내 활동으로도 충분',         note:'눈물 자국 관리 필요' },
-  '포메라니안':    { emoji:'🐕', activity:'보통', care:'하루 30분 산책 권장',          note:'추위에 약함 — 보온 필수' },
-  '비숑 프리제':   { emoji:'🐶', activity:'낮음', care:'실내 위주 생활 가능',          note:'정기 미용 필수 (저알레르기)' },
-  '진돗개':        { emoji:'🦊', activity:'높음', care:'넓은 공간 & 충분한 운동',     note:'사회화 훈련이 중요' },
-};
-
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* 네비게이션                                                                    */
 /* ═══════════════════════════════════════════════════════════════════════════ */
@@ -232,31 +224,6 @@ function updateWalkLabel(val) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/* PAGE 4 — 품종 가이드 & FAQ                                                   */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-function updateBreedGuide(breedName) {
-  const info = BREED_DB[breedName];
-  if (!info) return;
-  document.getElementById('breed-emoji').textContent = info.emoji;
-  document.getElementById('breed-name-display').textContent = breedName;
-  document.getElementById('breed-activity').textContent = info.activity;
-  document.getElementById('breed-care').textContent = info.care;
-  document.getElementById('breed-note').textContent = info.note;
-}
-
-function toggleFAQ(btn) {
-  const isOpen = btn.classList.contains('open');
-  // 모두 닫기
-  document.querySelectorAll('.faq-q').forEach(q => q.classList.remove('open'));
-  document.querySelectorAll('.faq-a').forEach(a => a.classList.remove('open'));
-  // 클릭된 것만 열기 (토글)
-  if (!isOpen) {
-    btn.classList.add('open');
-    btn.nextElementSibling.classList.add('open');
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
 /* 초기화                                                                        */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
@@ -274,11 +241,4 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) el.addEventListener('input', applyFilters);
   });
   renderTable();
-
-  // Page 4 품종 선택
-  const breedSel = document.getElementById('breed-select');
-  if (breedSel) {
-    breedSel.addEventListener('change', () => updateBreedGuide(breedSel.value));
-    updateBreedGuide(breedSel.value);
-  }
 });
