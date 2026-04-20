@@ -285,74 +285,276 @@ for _i, _q in enumerate(QUESTIONS):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 매칭 알고리즘
+# 매칭 알고리즘 — 올바른 방향으로 재설계
 # ══════════════════════════════════════════════════════════════════════════════
-def compute_breed_score(breed_row, answers, importance,
-                        shed_w=1.0, bark_w=1.0, energy_w=1.0, social_w=1.0, train_w=1.0):
+#
+# [설계 원칙]
+# ① 최소 요구 조건 (아파트 적합성, 훈련 용이성, 아이 친화력):
+#      breed_value < needed  → 감점  /  breed_value >= needed → 만점
+#      = 1.0 - max(0, needed - breed) / 4.0
+#
+# ② 상한 제약 (털빠짐, 짖음빈도):
+#      breed_value > tolerance → 감점  /  breed_value <= tolerance → 만점
+#      = 1.0 - max(0, breed - tolerance) / 4.0
+#
+# ③ 선호 매칭 (에너지, 그루밍, 낯선사람 친화력):
+#      = 1.0 - abs(breed - ideal) / 4.0
+#
+# ─── 사용자 답변 → 이상적인 breed trait 값 변환 테이블 ─────────────────────
+
+# 아파트 → 필요한 아파트_적합성 (높을수록 좁은 공간에서 키우기 적합한 품종 필요)
+_APT_NEED = {
+    "아파트 (저층 1~5층)":  4.5,
+    "아파트 (중·고층 6층+)": 5.0,
+    "빌라 / 연립주택":      3.5,
+    "단독주택 (마당 있음)":  1.0,   # 넓은 마당 → 어떤 품종도 OK
+    "단독주택 (마당 없음)":  3.0,
+    "오피스텔":             5.0,
+    "원룸 / 고시원":        5.0,
+}
+
+# 산책시간 → 이상적인 에너지_레벨
+_WALK_ENERGY = {
+    "15분 미만":    1.0,
+    "15~30분":     1.5,
+    "30분~1시간":  2.5,
+    "1~1.5시간":   3.0,
+    "1.5~2시간":   4.0,
+    "2시간 이상":  5.0,
+}
+
+# 활동성 → 이상적인 에너지_레벨
+_ACT_ENERGY = {
+    "주로 집에서 쉼 (집순이/집돌이)": 1.0,
+    "가벼운 산책 즐김":             2.0,
+    "주 2~3회 운동":               3.0,
+    "매일 운동함":                 4.0,
+    "조깅·등산 등 강도 높은 활동":   5.0,
+}
+
+# 에너지 레벨 선호 (Q23)
+_ENERGY_PREF = {
+    "매우 차분 (실내 소파파)":          1.0,
+    "차분한 편":                       2.0,
+    "보통":                            3.0,
+    "활동적 (매일 뛰어놀고 싶어함)":    4.0,
+    "매우 활동적 (스포츠 파트너)":      5.0,
+}
+
+# 경험 → 필요한 훈련_용이성 / 초보_적합성 (초보일수록 높은 값 필요)
+_EXP_TRAIN_NEED = {
+    "전혀 없음 (완전 초보)":             5.0,
+    "어릴 때 가족이 키움 (직접 케어 아님)": 4.0,
+    "성인 후 1~2년 경험":               3.0,
+    "3~5년 경험":                       2.0,
+    "5년 이상 경험":                    1.0,
+}
+
+# 훈련 투자 → 필요한 훈련_용이성 (투자 적을수록 쉬운 개 필요)
+_TRAIN_INVEST_NEED = {
+    "거의 없음 (훈련 자신 없음)":          5.0,
+    "주 1회 정도":                        4.0,
+    "매일 5~10분":                        3.0,
+    "매일 15~20분":                       2.0,
+    "매일 30분 이상 (전문 훈련 목표)":    1.0,
+}
+
+# 털빠짐 허용치 (높을수록 털 많이 빠져도 OK → 허용 상한값)
+_SHED_TOL = {
+    "털 빠짐 절대 싫음":   1.0,
+    "아주 적은 것만 OK":  1.5,
+    "적당히는 OK":        3.0,
+    "많아도 청소하면 됨":  4.0,
+    "전혀 상관없음":      5.0,
+}
+
+# 짖음 허용치 (높을수록 짖어도 OK)
+_BARK_TOL = {
+    "매우 예민 (조용한 견종 필수)": 1.0,
+    "조금 예민":                   2.0,
+    "보통":                        3.0,
+    "괜찮은 편":                   4.0,
+    "전혀 신경 안 씀":             5.0,
+}
+
+# 이웃 소음 민감도 → 추가 짖음 허용치
+_NEIGHBOR_TOL = {
+    "매우 예민 (소음 민원 경험)":    1.0,
+    "꽤 예민한 편":                  2.0,
+    "보통":                          3.0,
+    "별로 신경 안 씀":               4.0,
+    "전혀 상관없음 (단독주택 등)":   5.0,
+}
+
+# 그루밍 의향 → 이상적인 그루밍_필요성 (대칭 매칭)
+_GROOM_IDEAL = {
+    "최소한만 (셀프 브러싱 정도)":  1.0,
+    "분기 1회 미용샵":              2.0,
+    "월 1회 미용샵":                3.0,
+    "월 2회 이상 미용샵":           4.0,
+    "적극 투자 (전문 그루밍 정기)": 5.0,
+}
+
+# 낯선 사람 친화력 선호 → 이상적인 낯선사람_친화력
+_STRANGER_IDEAL = {
+    "경계심 강했으면 (보호견 역할)":       1.0,
+    "약간 낯을 가리는 편":                2.0,
+    "처음엔 낯가리지만 금방 친해지는":    3.0,
+    "누구에게나 친근한":                  4.0,
+    "매우 사교적인":                      5.0,
+}
+
+# 타견 친화력 필요도 (다견 가정일수록 높은 값 필요)
+_DOG_FR_NEED = {
+    "필수 (다견 가정)":      5.0,
+    "매우 중요":             4.0,
+    "있으면 좋겠음":         3.0,
+    "별로 중요하지 않음":    2.0,
+    "상관없음":              1.0,
+}
+
+# 혼자 있는 시간 → 적합한 에너지 상한 (오래 혼자 있을수록 낮은 에너지 선호)
+_ALONE_MAX_ENERGY = {
+    "1시간 미만":   5.0,
+    "1~3시간":      4.5,
+    "3~5시간":      3.5,
+    "5~7시간":      2.5,
+    "7~9시간":      2.0,
+    "9시간 이상":   1.5,
+}
+
+
+def compute_breed_score(breed_row, raw_answers, importance,
+                        shed_w=1.0, bark_w=1.0, energy_w=1.0,
+                        social_w=1.0, train_w=1.0):
+    """
+    raw_answers: st.session_state.match_answers (원본 문자열 답변 그대로)
+    breed_row  : dog_breeds.csv 한 행 (pd.Series)
+    반환값     : 0~100 매칭 점수
+    """
+
+    def fv(k, default=3.0):
+        try:
+            return float(breed_row.get(k, default) or default)
+        except Exception:
+            return default
+
     def imp(q_id):
         return importance.get(q_id, 1.0)
 
     score, max_score = 0.0, 0.0
 
-    def add(base_w, val, ideal, q_id=""):
+    # ── 점수 추가 헬퍼 ──────────────────────────────────────────────────────
+    def need_score(w, breed_val, needed, q_id=""):
+        """① 최소 요구: breed_val이 needed에 못 미치면 감점, 넘으면 만점"""
         nonlocal score, max_score
-        w = base_w * imp(q_id)
-        max_score += w
-        score += w * max(0.0, 1.0 - abs(float(val) - float(ideal)) / 4.0)
+        ww = w * imp(q_id)
+        max_score += ww
+        score += ww * max(0.0, 1.0 - max(0.0, needed - breed_val) / 4.0)
 
-    energy       = float(breed_row.get("에너지_레벨", 3) or 3)
-    walk_n       = answers.get("walk_time", 2)
-    act_n        = answers.get("activity_pref", 2)
-    trainability = float(breed_row.get("훈련_용이성", 3) or 3)
-    exp_n        = answers.get("experience", 2)
-    train_n      = answers.get("training", 2)
-    bark         = float(breed_row.get("짖음_빈도", 3) or 3)
-    noise_n      = answers.get("noise_tolerance", 3)
-    shed         = float(breed_row.get("털_빠짐", 3) or 3)
-    shed_n       = answers.get("shed_tolerance", 3)
-    groom        = float(breed_row.get("그루밍_필요성", 3) or 3)
-    groom_n      = answers.get("grooming", 2)
-    apt          = float(breed_row.get("아파트_적합성", 3) or 3)
-    housing_n    = answers.get("housing_type", 2)
-    beginner     = float(breed_row.get("초보_적합성", 3) or 3)
-    child_score  = float(breed_row.get("아이_친화력", 3) or 3)
-    dog_fr       = float(breed_row.get("타견_친화력", 3) or 3)
-    dog_need     = answers.get("dog_friendly", 2)
-    energy_pref  = answers.get("energy_pref", 2)
-    stranger     = float(breed_row.get("낯선사람_친화력", 3) or 3)
-    stranger_p   = answers.get("stranger_friendly", 3)
-    exercise     = float(breed_row.get("운동량", 3) or 3)
+    def limit_score(w, breed_val, tolerance, q_id=""):
+        """② 상한 제약: breed_val이 tolerance를 넘으면 감점, 이하면 만점"""
+        nonlocal score, max_score
+        ww = w * imp(q_id)
+        max_score += ww
+        score += ww * max(0.0, 1.0 - max(0.0, breed_val - tolerance) / 4.0)
 
-    add(15 * energy_w, energy,       (walk_n + act_n) / 2,  "walk_time")
-    add(10 * train_w,  trainability, (exp_n + train_n) / 2, "training")
-    add(10 * bark_w,   bark,         6 - noise_n,            "noise_tolerance")
-    add(10 * shed_w,   shed,         6 - shed_n,             "shed_tolerance")
-    add(8,             groom,        groom_n,                "grooming")
-    add(12,            apt,          housing_n,              "housing_type")
-    add(10 * train_w,  beginner,     exp_n,                  "experience")
-    add(10 * energy_w, energy,       energy_pref,            "energy_pref")
-    add(8  * energy_w, exercise,     walk_n,                 "walk_time")
-    add(6,             stranger,     stranger_p,             "stranger_friendly")
-    add(8  * social_w, dog_fr,       dog_need,               "dog_friendly")
+    def match_score(w, breed_val, ideal, q_id=""):
+        """③ 선호 매칭: 대칭 감점"""
+        nonlocal score, max_score
+        ww = w * imp(q_id)
+        max_score += ww
+        score += ww * max(0.0, 1.0 - abs(breed_val - ideal) / 4.0)
 
-    if answers.get("has_children"):
-        add(15 * social_w, child_score, 5, "children")
+    # ── 1. 아파트 적합성 ────────────────────────────────────────────────────
+    apt  = fv("아파트_적합성")
+    # Q1 주거형태에서 필요 수준 결정
+    apt_needed = _APT_NEED.get(raw_answers.get("housing_type", ""), 3.0)
+    # Q2 집 크기: 좁을수록 아파트 적합 품종 더 필요
+    size_bonus = {"10평 미만": 0.5, "10~20평": 0.3, "20~30평": 0.0,
+                  "30~45평": -0.3, "45~60평": -0.5, "60평 이상": -0.5}
+    apt_needed = max(1.0, min(5.0, apt_needed + size_bonus.get(raw_answers.get("housing_size", ""), 0.0)))
+    need_score(15 * imp("housing_type"), apt, apt_needed, "housing_type")
+
+    # ── 2. 에너지 레벨 ──────────────────────────────────────────────────────
+    energy   = fv("에너지_레벨")
+    exercise = fv("운동량")
+    walk_e   = _WALK_ENERGY.get(raw_answers.get("walk_time", ""), 2.5)
+    act_e    = _ACT_ENERGY.get(raw_answers.get("activity_pref", ""), 2.5)
+    ep       = _ENERGY_PREF.get(raw_answers.get("energy_pref", ""), 2.5)
+    # 세 가지 평균으로 이상 에너지 산출
+    ideal_energy = (walk_e + act_e + ep) / 3.0
+    match_score(15 * energy_w * imp("walk_time"), energy,   ideal_energy, "walk_time")
+    match_score(8  * energy_w,                    exercise, ideal_energy)
+
+    # ── 3. 혼자 있는 시간 (오래 혼자 → 낮은 에너지 상한) ──────────────────
+    alone_max = _ALONE_MAX_ENERGY.get(raw_answers.get("alone_time", ""), 5.0)
+    limit_score(10 * imp("alone_time"), energy, alone_max, "alone_time")
+
+    # ── 4. 훈련 용이성 / 초보 적합성 ────────────────────────────────────────
+    trainability = fv("훈련_용이성")
+    beginner     = fv("초보_적합성")
+    exp_need     = _EXP_TRAIN_NEED.get(raw_answers.get("experience", ""), 3.0)
+    inv_need     = _TRAIN_INVEST_NEED.get(raw_answers.get("training", ""), 3.0)
+    train_needed = (exp_need + inv_need) / 2.0
+    need_score(12 * train_w * imp("experience"), trainability, train_needed, "experience")
+    need_score(8  * train_w * imp("training"),   beginner,     train_needed, "training")
+
+    # ── 5. 털 빠짐 (허용치 초과하면 감점) ────────────────────────────────
+    shed     = fv("털_빠짐")
+    shed_tol = _SHED_TOL.get(raw_answers.get("shed_tolerance", ""), 3.0)
+    limit_score(12 * shed_w * imp("shed_tolerance"), shed, shed_tol, "shed_tolerance")
+
+    # ── 6. 알레르기 패널티 ──────────────────────────────────────────────────
+    if raw_answers.get("allergy_sensitive"):
+        al_num = raw_answers.get("allergy_num", 3)
+        extra_tol = 1.0 if al_num == 1 else 2.0
+        limit_score(10 * imp("allergy"), shed, extra_tol, "allergy")
+
+    # ── 7. 짖음 빈도 (두 질문의 최솟값을 허용치로 사용) ──────────────────
+    bark      = fv("짖음_빈도")
+    bark_tol1 = _BARK_TOL.get(raw_answers.get("noise_tolerance", ""), 3.0)
+    bark_tol2 = _NEIGHBOR_TOL.get(raw_answers.get("noise_neighbor", ""), 3.0)
+    bark_tol  = min(bark_tol1, bark_tol2)   # 더 엄격한 조건 기준
+    limit_score(12 * bark_w * imp("noise_tolerance"), bark, bark_tol, "noise_tolerance")
+
+    # ── 8. 그루밍 필요성 (대칭 매칭) ────────────────────────────────────────
+    groom       = fv("그루밍_필요성")
+    groom_ideal = _GROOM_IDEAL.get(raw_answers.get("grooming", ""), 2.0)
+    # 그루밍 의향보다 필요가 많으면 더 감점 (비대칭)
+    if groom > groom_ideal:
+        limit_score(10 * imp("grooming"), groom, groom_ideal, "grooming")
     else:
-        max_score += 15
-        score     += 15 * 0.5
+        match_score(10 * imp("grooming"), groom, groom_ideal, "grooming")
 
-    if answers.get("allergy_sensitive"):
-        al = answers.get("allergy_num", 3)
-        if al == 1 and shed > 2:
-            score -= 15 * imp("allergy")
-    max_score += 5
+    # ── 9. 아이 친화력 ──────────────────────────────────────────────────────
+    child_fr = fv("아이_친화력")
+    if raw_answers.get("has_children"):
+        need_score(15 * social_w * imp("children"), child_fr, 4.0, "children")
+    else:
+        # 아이 없으면 중립 부분 점수
+        match_score(5, child_fr, 3.0)
+
+    # ── 10. 타견 친화력 ─────────────────────────────────────────────────────
+    dog_fr   = fv("타견_친화력")
+    dog_need = _DOG_FR_NEED.get(raw_answers.get("dog_friendly", ""), 1.0)
+    need_score(10 * social_w * imp("dog_friendly"), dog_fr, dog_need, "dog_friendly")
+
+    # ── 11. 낯선 사람 친화력 (대칭 매칭) ────────────────────────────────────
+    stranger       = fv("낯선사람_친화력")
+    stranger_ideal = _STRANGER_IDEAL.get(raw_answers.get("stranger_friendly", ""), 3.0)
+    match_score(6 * imp("stranger_friendly"), stranger, stranger_ideal, "stranger_friendly")
 
     return round(min(100.0, (score / max_score) * 100), 1) if max_score > 0 else 50.0
 
 
-def match_breeds(breeds_df, answers, importance, shed_w, bark_w, energy_w, social_w, train_w, top_n=5):
-    rows = [(row, compute_breed_score(row, answers, importance, shed_w, bark_w, energy_w, social_w, train_w))
-            for _, row in breeds_df.iterrows()]
+def match_breeds(breeds_df, raw_answers, importance,
+                 shed_w, bark_w, energy_w, social_w, train_w, top_n=5):
+    rows = [
+        (row, compute_breed_score(row, raw_answers, importance,
+                                  shed_w, bark_w, energy_w, social_w, train_w))
+        for _, row in breeds_df.iterrows()
+    ]
     rows.sort(key=lambda x: x[1], reverse=True)
     return rows[:top_n]
 
@@ -813,7 +1015,7 @@ section[data-testid="stAppViewContainer"] {
 </style>
 """
 
-def render_top_breeds(top_breeds, a, korea_df, numeric):
+def render_top_breeds(top_breeds, a, korea_df):
     st.markdown("---")
     st.markdown("### 🎯 추천 품종 Top 5")
     st.caption("사이드바 슬라이더로 조건을 바꾸면 순위가 실시간 재정렬됩니다 🩷")
@@ -917,7 +1119,7 @@ def render_top_breeds(top_breeds, a, korea_df, numeric):
 
             # ── 보호견 섹션 ────────────────────────────────────────────────
             st.markdown(f"#### 🐾 입양 가능한 '{breed_name}' 보호견")
-            adopt_dogs = filter_korea_dogs(korea_df, breed_name, numeric, top_n=3)
+            adopt_dogs = filter_korea_dogs(korea_df, breed_name, a, top_n=3)
             if adopt_dogs.empty:
                 st.info("현재 이 품종의 보호견이 없어 다른 친구들을 소개합니다.")
                 adopt_dogs = korea_df.sample(min(3, len(korea_df)))
@@ -1166,36 +1368,13 @@ def render():
             social_w = st.slider("👶 아이/타견 친화력 중요도",  0.5, 3.0, 1.0, 0.5)
             train_w  = st.slider("🎓 훈련 난이도 중요도",       0.5, 3.0, 1.0, 0.5)
 
-        # 답변 수치 변환
+        # raw 답변 그대로 사용 (알고리즘 내부에서 변환)
         a  = st.session_state.match_answers
         importance_mul = {qid: 2.0 if v else 1.0
                           for qid, v in st.session_state.match_importance.items()}
 
-        def _w(k, default=2):
-            return a.get(k + "_w", default)
-
-        numeric = {
-            "housing_type":      _w("housing_type",      2),
-            "walk_time":         _w("walk_time",          2),
-            "activity_pref":     _w("activity_pref",      2),
-            "experience":        _w("experience",         2),
-            "training":          _w("training",           2),
-            "noise_tolerance":   _w("noise_tolerance",    3),
-            "shed_tolerance":    _w("shed_tolerance",     3),
-            "grooming":          _w("grooming",           2),
-            "allergy_num":        a.get("allergy_num",    3),
-            "energy_pref":       _w("energy_pref",        2),
-            "stranger_friendly": _w("stranger_friendly",  3),
-            "dog_friendly":      _w("dog_friendly",       2),
-            "has_children":       a.get("has_children",   False),
-            "allergy_sensitive":  a.get("allergy_sensitive", False),
-            "gender_pref":        a.get("gender_pref",   "상관없음"),
-            "age_pref":           a.get("age_pref",      "상관없음"),
-            "region_pref":        a.get("region_pref",   "상관없음"),
-        }
-
         top_breeds = match_breeds(
-            breeds_df, numeric, importance_mul,
+            breeds_df, a, importance_mul,
             shed_w, bark_w, energy_w, social_w, train_w, top_n=5
         )
         st.session_state.top_breeds_result = top_breeds
@@ -1222,7 +1401,7 @@ def render():
         if "top_breeds_result" in st.session_state:
             top_breeds = st.session_state.top_breeds_result
             # 추천 품종 Top 5
-            render_top_breeds(top_breeds, a, korea_df, numeric)
+            render_top_breeds(top_breeds, a, korea_df)
 
         # 하단 CTA
         st.markdown("---")
