@@ -35,11 +35,11 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     pages = {
-        "main":     "🏠 메인 페이지",
+        "main":     "🏠 paw(포)옹 소개",
         "dog_list":     "🐕 반려견 리스트",
         "matching": "🔍 퍼펙트 매칭",
         "guide":    "📖 입양 안내 & 기르는 법",
-        "story":    "💌 스토리",
+        "story":    "💌 입양 스토리",
     }
     for key, label in pages.items():
         if st.button(label, key=f"nav_{key}", use_container_width=True):
